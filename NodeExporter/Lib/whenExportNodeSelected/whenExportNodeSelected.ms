@@ -31,7 +31,7 @@ function whenExportNodeSelected objs =
 		(
 			format "WHEN_EXPORT_NODE_SELECTED: %\n" obj
 			
-			NodeList = NodeList_v(ROLLOUT_export.ML_nodes)
+			NodeList = NodeList_v(DIALOG_nodeexporter.ML_nodes)
 			
 			/* GET SELECTED NODES IN SCENE */ 
 			selected_nodes = NodeList.getSelectedNodesInScene()
@@ -39,12 +39,12 @@ function whenExportNodeSelected objs =
 			/* SELECT ITEMS IN LIST */ 
 			NodeList.selectNodesInList(selected_nodes)
 			
-			ROLLOUT_export.BP_export_path.text = NodeList.getExportPathText(selected_nodes)
+			DIALOG_nodeexporter.BP_export_path.text = NodeList.getExportPathText(selected_nodes)
 	
-			ROLLOUT_export.ML_node_groups.items = sort (makeUniqueArray(for obj in shapes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect obj.parent.name))
+			DIALOG_nodeexporter.ML_node_groups.items = sort (makeUniqueArray(for obj in shapes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect obj.parent.name))
 		)
 		else
-			ROLLOUT_export.BP_export_path.text = ""
+			DIALOG_nodeexporter.BP_export_path.text = ""
 	)
 )
 

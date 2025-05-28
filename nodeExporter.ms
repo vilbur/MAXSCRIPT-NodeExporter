@@ -14,7 +14,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/C
 --global NodeExporter
 global DIALOG_nodeexporter
 
-global ROLLOUT_export
+global DIALOG_nodeexporter
 global ROLLOUT_3d_print
 --global ROLLOUT_viewports
 
@@ -130,9 +130,9 @@ try(
 
 	
 	/* CREATE DIALOG */
-	VILTOOLS = ContentLoader.create height:1024
+	NodeExporter = ContentLoader.create height:1024
 
-	VILTOOLS.register()
+	NodeExporter.register()
 
 )catch(
 	format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())

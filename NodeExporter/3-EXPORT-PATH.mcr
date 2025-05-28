@@ -8,8 +8,8 @@ toolTip:	"Open Export Path"
 icon:	"across:10|width:16|offset:[ -16, 0 ]"
 (
 	format "eventFired	= % \n" eventFired
-	--format "ROLLOUT_export.BP_export_path.text	= % \n" ROLLOUT_export.BP_export_path.text
-	export_path = maxFilePath + ROLLOUT_export.BP_export_path.text
+	--format "DIALOG_nodeexporter.BP_export_path.text	= % \n" DIALOG_nodeexporter.BP_export_path.text
+	export_path = maxFilePath + DIALOG_nodeexporter.BP_export_path.text
 
 	export_path = ( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\"
 
@@ -34,9 +34,9 @@ icon:	"Control:browsePath|initialDir:maxFilePath|across:1|offset:[ 5, -24 ]|bord
 	else
 		EventFired.val
 	
-	ROLLOUT_export.BP_export_path.text = relative_path
+	DIALOG_nodeexporter.BP_export_path.text = relative_path
 
-	for selected_node in (NodeList_v(ROLLOUT_export.ML_nodes)).getSelectedNodesInScene() do
+	for selected_node in (NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInScene() do
 	(
 		format "selected_node: %\n" selected_node
 	

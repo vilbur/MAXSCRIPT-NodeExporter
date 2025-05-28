@@ -15,7 +15,7 @@ icon:	"height:64|across:2|offset:[0,16]"
 	--export_dir = execute ("@"+ "\""+EventFired.Roll.BROWSEPATH_Export_Dir.text +"\"")
 	clearListener()
 
-	selected_nodes =  ((NodeList_v(ROLLOUT_export.ML_nodes)).getSelectedNodes())
+	selected_nodes =  ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodes())
 
 	format "selected_nodes	= % \n" selected_nodes
 

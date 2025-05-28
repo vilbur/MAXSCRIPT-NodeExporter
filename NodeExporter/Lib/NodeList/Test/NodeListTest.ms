@@ -24,7 +24,7 @@ pos_C = [0, 200,0]
 --LayerManager.newLayerFromName "Layer C"
 --layer_C = LayerManager.getLayerFromName "Layer C"
 --
----- NodeList 	= NodeList_v(ROLLOUT_export.ML_nodes)
+---- NodeList 	= NodeList_v(DIALOG_nodeexporter.ML_nodes)
 --
 --_Box	= Box	pos:pos_A parent:node_A
 --_Sphere	= Sphere	pos:pos_B parent:node_B

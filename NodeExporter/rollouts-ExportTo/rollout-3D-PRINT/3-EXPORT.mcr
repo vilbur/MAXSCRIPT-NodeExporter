@@ -14,7 +14,7 @@ buttontext:	"Exclude"
 icon:	"control:editText|across:1|offset:[ 0, 4 ]|value:support-source|toolTip:Do not export object, if it`s name match this text"
 (
 	format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#box)(ROLLOUT_export.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
 )
 
 /*==============================================================================
@@ -38,7 +38,7 @@ icon:	"height:64|across:3|offset:[ 0, 6 ]"
 	filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrintExporter\PrintExporter.ms"
 
 	(ExporterSetup_v(#Print)).export()
-	--(PrinterVolume_v()).fixPositionionObjects(ROLLOUT_export.SPIN_export_size.value)
+	--(PrinterVolume_v()).fixPositionionObjects(DIALOG_nodeexporter.SPIN_export_size.value)
 )
 
 
@@ -56,7 +56,7 @@ icon:	"height:64|across:3|offset:[ 0, 6 ]"
 	clearListener(); print("Cleared in:\n"+getSourceFileName())
 	filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrinterVolume\PrinterVolume.ms"
 
-	(PrinterVolume_v(ROLLOUT_export.SPIN_export_size.value)).createVolume(#Rectangle)
+	(PrinterVolume_v(DIALOG_nodeexporter.SPIN_export_size.value)).createVolume(#Rectangle)
 )
 
 
@@ -71,7 +71,7 @@ toolTip:	"Create\Delete dummy of 3D printer volume"
 icon:	"across:3|offset:[ 0, 6 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	(PrinterVolume_v(ROLLOUT_export.SPIN_export_size.value)).createVolume(#box)
+	(PrinterVolume_v(DIALOG_nodeexporter.SPIN_export_size.value)).createVolume(#box)
 )
 
 /*------------------------------------------------------------------------------
@@ -88,14 +88,14 @@ toolTip:	"Open exported files of selected nodes"
 icon:	"height:64|across:3|offset:[ 0, 6 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#Rectangle)(ROLLOUT_export.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#Rectangle)(DIALOG_nodeexporter.SPIN_export_size.value)
 
-	selected_nodes = ((NodeList_v(ROLLOUT_export.ML_nodes)).getSelectedNodesInList())
+	selected_nodes = ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInList())
 
 	PrintExporter = PrintExporter_v()
 
-	PrintExporter.params[#OPEN_IN]	= ROLLOUT_export.ExportTo.ROLLOUT_3d_print.RB_open_in_program.state
-	PrintExporter.params[#SUBDIR_BY_NODE]	= ROLLOUT_export.CBX_sub_directory_by_node_name.checked
+	PrintExporter.params[#OPEN_IN]	= DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_open_in_program.state
+	PrintExporter.params[#SUBDIR_BY_NODE]	= DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked
 
 
 	if selected_nodes.count > 0 then

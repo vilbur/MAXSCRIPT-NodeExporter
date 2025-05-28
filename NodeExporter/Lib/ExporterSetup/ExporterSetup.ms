@@ -21,7 +21,7 @@ struct ExporterSetup_v
 
 	export_nodes,
 
-	ROLLOUT_export, -- UI rollout
+	DIALOG_nodeexporter, -- UI rollout
 
 
 	/* dependency */
@@ -69,7 +69,7 @@ struct ExporterSetup_v
 	function _getSelectedNodes =
 	(
 		--format "\n"; print "ExporterSetup_v._getSelectedNodes()"
-		this.export_nodes = ((NodeList_v(ROLLOUT_export.ML_nodes)).getSelectedNodesInList())
+		this.export_nodes = ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInList())
 	),
 
 	/** Export obj
@@ -85,17 +85,17 @@ struct ExporterSetup_v
 	function _exportPrint =
 	(
 		--format "\n"; print "ExporterSetup_v._exportPrint()"
-		--format "ROLLOUT_export.SPIN_export_size.value:	% \n" ROLLOUT_export.SPIN_export_size.value
+		--format "DIALOG_nodeexporter.SPIN_export_size.value:	% \n" DIALOG_nodeexporter.SPIN_export_size.value
 
 		format "\nEXPORTING 3D PRINT\n"
 
 		Exporter =	(PrintExporter_v(this.export_nodes))
 
-		print_rollout = ROLLOUT_export.ExportTo.ROLLOUT_3d_print
+		print_rollout = DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print
 
 		Exporter.params[#EXPORT_FORMAT]	= #("obj", "stl")[print_rollout.RB_export_format.state]
-		Exporter.params[#EXPORT_SCALE]	= ROLLOUT_export.SPIN_export_size.value
-		Exporter.params[#SUBDIR_BY_NODE]	= ROLLOUT_export.CBX_sub_directory_by_node_name.checked
+		Exporter.params[#EXPORT_SCALE]	= DIALOG_nodeexporter.SPIN_export_size.value
+		Exporter.params[#SUBDIR_BY_NODE]	= DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked
 
 		Exporter.params[#FIX_POSITION]	= ROLLOUT_3d_print.CBX_fix_position.state
 		Exporter.params[#MESHSMOOTH]	= ROLLOUT_3d_print.CBX_meshsmooth.state
@@ -128,7 +128,7 @@ struct ExporterSetup_v
 	--function _getExportSize =
 	--(
 	--	--format "\n"; print "ExporterSetup_v._getExportSize()"
-	--	ROLLOUT_export.SPIN_export_size.value --return
+	--	DIALOG_nodeexporter.SPIN_export_size.value --return
 	--),
 
 	--/** Get export file path
@@ -136,7 +136,7 @@ struct ExporterSetup_v
 	--function _getExportFilePath export_node =
 	--(
 	--	--format "\n"; print "ExporterSetup_v._getExportFilePath()"
-	--	subdir = if this.ROLLOUT_export.CBX_sub_directory_by_node_name.checked then "/"+export_node.name + "/" else "/"
+	--	subdir = if this.DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked then "/"+export_node.name + "/" else "/"
 	--
 	--	export_path =  (this._getExportDir(export_node.export_dir)) + subdir + export_node.name + ".obj"
 	--
@@ -159,7 +159,7 @@ struct ExporterSetup_v
 	on create do
 	(
 		format "\n"; print "ExporterSetup_v.onCreate()"
-		this.ROLLOUT_export = execute "ROLLOUT_export"
+		this.DIALOG_nodeexporter = execute "DIALOG_nodeexporter"
 	)
 
 )

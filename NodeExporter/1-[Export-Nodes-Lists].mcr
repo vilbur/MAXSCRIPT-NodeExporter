@@ -91,8 +91,8 @@ icon:	"pos:[ 250, 24 ]"
  */
 macroscript	_export_node_load
 category:	"_Export"
-buttontext:	"Load"
-toolTip:	"Load nodes to list"
+buttontext:	"Refresh"
+toolTip:	"Refresh nodes in list"
 icon:	"pos:[ 316, 24 ]"
 
 (
@@ -340,9 +340,12 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	
 	select nodes_and_objects
 	
-	
+
 	LayersVisibility.hideUnselected ISOLATE:true
 
+	max tool zoomextents all
+
+	select selected_nodes
 	--layers_of_objects = LayersManager.getLayersByObjects( nodes_and_objects  )
 	--
 	----format "\n-----------\nARRAY:layers_of_objects:\n";  for layer in layers_of_objects do format "layer:	%\n" layer.name
@@ -359,12 +362,11 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	--
 	--
 	--clearSelection()
+	IsolateSelection.ExitIsolateSelectionMode()
 	--
-	--max tool zoomextents all
 	--
 	--
 	--/* ISOLATE NODES AND OBJECTS IF NEEDED */
-	--IsolateSelection.ExitIsolateSelectionMode()
 	--
 	--not_hidden_other_objects = for obj in objects where obj.isHidden == false and findItem nodes_and_objects obj == 0 collect obj
 	--

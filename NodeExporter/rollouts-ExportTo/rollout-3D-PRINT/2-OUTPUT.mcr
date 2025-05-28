@@ -35,7 +35,7 @@ icon:	"control:radiobuttons|across:2|items:#('Chitubox', 'LycheSlicer')|columns:
 
 	/* SET EXPORT FORMAT TO STL IF LycheSlicer is used (LycheSlicer import holes in *.obj files ) */
 	if EventFired.val == 2 then
-		ROLLOUT_export.ExportTo.ROLLOUT_3d_print.RB_export_format.state = 2
+		DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_export_format.state = 2
 )
 
 /*------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ buttontext:	"Project File Open"
 icon:	"control:checkbox|across:2|offset:[ 12, 2 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#box)(ROLLOUT_export.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
 )
 
 /**
@@ -68,5 +68,5 @@ icon:	"control:checkbox|across:2|offset:[ 0, 2 ]"
 (
 	format "EventFired	= % \n" EventFired
 
-	--(PrinterVolume_v()).createVolume(#box)(ROLLOUT_export.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
 )
