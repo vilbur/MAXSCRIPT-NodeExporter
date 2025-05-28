@@ -1,0 +1,7 @@
+test.ms
+*.bak
+.komodotools
+*_backup.max
+nodeExporter.ini
+Rollouts/rollouts-Tools/rollout-EXPORT/Test/Export/
+Rollouts/rollouts-Tools/rollout-EXPORT/Test/UnrealProject/
