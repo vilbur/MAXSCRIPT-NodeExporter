@@ -21,6 +21,8 @@ struct ExportNode_v
 		global ThisExportNode = this
 
 		this._selection = this._getSelection()
+		
+		select this._selection
 		--format "this._selection	= % \n" this._selection
 		this._createNodeDialog()
 	),
@@ -63,8 +65,8 @@ struct ExportNode_v
 					/*------------------------------------------------------------------------------
 						CREATE EXPORT NODE
 					--------------------------------------------------------------------------------*/
-					if ( ThisExportNode._createNodeObject(TextBox.Text) ) then
-						destroyDialog NODE_NAME_ROLLOUT
+					if ( ExportNodePlugin = ThisExportNode._createNodeObject(TextBox.Text) ) != undefined then
+						ExportNodePlugin --return
 				)
 				else if e.KeyCode == e.KeyCode.Escape then
 					destroyDialog NODE_NAME_ROLLOUT
@@ -80,14 +82,14 @@ struct ExportNode_v
 	 */
 	function _createNodeObject _name =
 	(
-		--format "\n"; print "ExportNode_v._createNodeObject()"
+		format "\n"; print "ExportNode_v._createNodeObject()"
 		this._name = _name
+			format "classOf ExportNode: %\n" (classOf ExportNode)
 
 		--format "node_exists	= % \n" node_exists
 		if( this._getNodeByName(_name) == undefined ) then
 		(
-
-			this._node = Export_Node name:_name text:_name export_dir:(this._getExportDir()) size:(this._getNodeSize()) isSelected:on pos:(this._getNewNodePosition())
+			this._node = ExportNodePlugin name:_name text:_name export_dir:(this._getExportDir()) size:(this._getNodeSize()) isSelected:on pos:(this._getNewNodePosition())
 
 			this._addToLayer()
 
@@ -97,7 +99,7 @@ struct ExportNode_v
 
 			ThisExportNode = undefined
 
-			true --return
+			this._node --return
 		)
 		else
 			this._exception() --return
@@ -123,7 +125,7 @@ struct ExportNode_v
 
 		setFocus NODE_NAME_ROLLOUT.TextBox
 
-		false --return
+		undefined --return
 	),
 
 	/** Get nodes in scene
@@ -131,7 +133,7 @@ struct ExportNode_v
 	function _getNodesInScene =
 	(
 		--format "\n"; print "ExportNode_v._getNodesInScene()"
-		for obj in shapes where classOf obj == Export_Node collect obj
+		for obj in shapes where classOf obj == ExportNodePlugin collect obj
 	),
 
 	/** Get nodes in scene
@@ -139,7 +141,7 @@ struct ExportNode_v
 	function _getNodeByName node_name =
 	(
 		--format "\n"; print "ExportNode_v._getNodesInScene()"
-		for obj in shapes where classOf obj == Export_Node and obj.name == node_name do return obj
+		for obj in shapes where classOf obj == ExportNodePlugin and obj.name == node_name do return obj
 
 		undefined --return
 	),
@@ -180,12 +182,12 @@ struct ExportNode_v
 		if other_node_size != 0 then other_node_size else 100
 	),
 
-	/** Get selected objects without Export_Nodes
+	/** Get selected objects without ExportNodePlugins
 	 */
 	function _getSelection =
 	(
 		--format "\n"; print "ExportNode_v._removeNodesFromSelection()"
-		for obj in selection where obj.parent == undefined and classOf obj != Export_Node collect obj --return
+		for obj in selection where obj.parent == undefined and classOf obj != ExportNodePlugin collect obj --return
 	),
 
 	/** Center node to xy center of selection, and bottom on z axis
@@ -196,53 +198,20 @@ struct ExportNode_v
 	(
 		--format "\n"; print "ExportNode_v._getNewNodePosition()"
 
-		selection_bbox = #( [ 0, 0, 0 ], [ 0, 0, 0 ])
-
-		if this._selection.count > 0 then
+		if selection.count > 0 then
 		(
-			for obj in this._selection  do
-			(
-				object_bbox = in coordsys world ( nodeLocalBoundingBox obj )
-
-				this._setMinMaxBbox (selection_bbox) (object_bbox) #x
-				this._setMinMaxBbox (selection_bbox) (object_bbox) #y
-				this._setMinMaxBbox (selection_bbox) (object_bbox) #z
-			)
-
-			--format "SELECTION_BBOX	= % \n" selection_bbox
-
-			export_node_pivot = ( selection_bbox[1] + selection_bbox[2] ) / 2
-
-			export_node_pivot.z = selection_bbox[1].z
-			--format "export_node_pivot	= % \n" export_node_pivot
-			export_node_pivot --return
+			bb_min = selection.min
+			bb_max = selection.max
+	
+			center_x = (bb_min.x + bb_max.x) * 0.5
+			center_y = (bb_min.y + bb_max.y) * 0.5
+			bottom_z = bb_min.z
+	
+			[center_x, center_y, bottom_z] -- return
 		)
 		else
 			[0, 0, 0] --return
 	),
-
-	/** Set min max bbox
-	 */
-	function _setMinMaxBbox &selection_bbox object_bbox axis =
-	(
-		--format "\n"; print "ExportNode_v._setMinMaxBbox()"
-
-		object_min	= getProperty object_bbox[1]	axis
-		selection_min	= getProperty selection_bbox[1]	axis
-
-		object_max	= getProperty object_bbox[2]	axis
-		selection_max	= getProperty selection_bbox[2]	axis
-
-		if selection_min == 0 or object_min < selection_min then
-			setProperty selection_bbox[1] axis object_min
-
-
-		if selection_max == 0 or object_max > selection_max then
-			setProperty selection_bbox[2] axis object_max
-
-		selection_bbox --return
-	),
-
 
 	/** Get name of new Export node
 	  *
@@ -250,7 +219,7 @@ struct ExportNode_v
 	  *		1) Name of first selected Group, if only single group is selected
 	  *		2) Object name if any is selected
 	  *		3) Scene name
-	  *		4) "Export_Node" if scene is unsaved
+	  *		4) "ExportNodePlugin" if scene is unsaved
 	 */
 	function _getNewNodeName =
 	(
@@ -267,7 +236,7 @@ struct ExportNode_v
 			( selection.count > 0): selection[1].name
 			( maxFileName != ""): ( dotNetObject "System.Text.RegularExpressions.Regex" @"[_-]\d+$" ).Replace ( getFilenameFile maxFileName ) ""
 			
-			default: "Export_Node"
+			default: "ExportNodePlugin"
 		)
 
 		node_name --return

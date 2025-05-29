@@ -9,13 +9,13 @@ struct LayersVisibility_v
 	/** Hide all layers except selected
 	  *
 	  */
-	function hideUnselected ISOLATE:false =
+	function showOnly _objects ISOLATE:false =
 	(
 		format "\n"; print "LayersManager_v.hideUnselected()"
 
-		_selection = selection
+		--_selection = selection
 		
-		layers_selected = this.getSelectedOrCurrent()
+		layers_selected = this.getLayersByObjects(_objects)
 		layers_in_tree = this.getLayersTree(layers_selected)
 
 		top_layers =  this.getTopLayers(this.getAllLayers())
@@ -29,26 +29,25 @@ struct LayersVisibility_v
 			for obj in objects where not obj.isHidden and not obj.isSelected do 
 				obj.isHidden = true
 				
-			for obj in _selection do 
+			for obj in _objects do 
 				obj.isHidden = false
 			
 		)
+		
 		redrawViews()
-		
-		
 	),
 
 	/*------------------------------------------------------------------------------
 		GET LAYERS
 	--------------------------------------------------------------------------------*/
 
-	/** Get current
-	  *
-	  */
-	function getCurrent =
-	(
-		for layer in this.getAllLayers() where layer.current do return layer
-	),
+	--/** Get current
+	--  *
+	--  */
+	--function getCurrent =
+	--(
+	--	for layer in this.getAllLayers() where layer.current do return layer
+	--),
 
 	/** Get layers
 	  *
@@ -60,32 +59,32 @@ struct LayersVisibility_v
 		for layer in layers where (layer = this._getLayer(layer)) != undefined collect layer
 	),
 
-	/** Get selected layers
-	  *  1) By selection in layer manager
-	  *  2) By current objects selection if nothing is selected in layer manager
-	  *
-	  * Return array of layers
-	 */
-	function getSelectedLayers =
-	(
-		format "\n"; print "LayersManager_v.getSelectedLayers()"
-		if  (selected_layers = this.getSelectedByManager()).count == 0 then
-			selected_layers = this.getLayersByObjects( selection as Array )
-		selected_layers --return
-	),
+	--/** Get selected layers
+	--  *  1) By selection in layer manager
+	--  *  2) By current objects selection if nothing is selected in layer manager
+	--  *
+	--  * Return array of layers
+	-- */
+	--function getSelectedLayers _objects =
+	--(
+	--	format "\n"; print "LayersManager_v.getSelectedLayers()"
+	--	--if  (selected_layers = this.getSelectedByManager()).count == 0 then
+	--		selected_layers = this.getLayersByObjects( _objects )
+	--	--selected_layers --return
+	--),
 
-	/** Get selected layers from Layers manager
-	 */
-	function getSelectedByManager =
-	(
-		format "\n"; print "LayersManager_v.getSelectedByManager()"
-		selected_layers = #()
-		
-		if LayerManager.isDialogOpen() and SceneExplorerInstance != undefined then
-			for layer in SceneExplorerInstance.SelectedItems() where superClassOf layer == Base_Layer collect this._getLayer(layer) --return
-		
-		selected_layers --return
-	),
+	--/** Get selected layers from Layers manager
+	-- */
+	--function getSelectedByManager =
+	--(
+	--	format "\n"; print "LayersManager_v.getSelectedByManager()"
+	--	selected_layers = #()
+	--	
+	--	if LayerManager.isDialogOpen() and SceneExplorerInstance != undefined then
+	--		for layer in SceneExplorerInstance.SelectedItems() where superClassOf layer == Base_Layer collect this._getLayer(layer) --return
+	--	
+	--	selected_layers --return
+	--),
 
 	/** Get layers by objects
 	  *
@@ -97,6 +96,7 @@ struct LayersVisibility_v
 
 		for obj in _objects do
 			appendIfUnique layers_by_obj obj.layer
+			
 		layers_by_obj --return
 	),
 
@@ -209,17 +209,17 @@ struct LayersVisibility_v
 	),
 
 
-	/** Get selected or current
-	  *
-	  */
-	function getSelectedOrCurrent =
-	(
-		format "\n"; print "LayersManager_v.getSelectedOrCurrent()"
-		if  (selected_layers = this.getSelectedLayers()).count == 0 then
-			selected_layers = #(this.getCurrent())
-
-		selected_layers --return
-	),
+	--/** Get selected or current
+	--  *
+	--  */
+	--function getSelectedOrCurrent =
+	--(
+	--	format "\n"; print "LayersManager_v.getSelectedOrCurrent()"
+	--	if  (selected_layers = this.getSelectedLayers()).count == 0 then
+	--		selected_layers = #(this.getCurrent())
+	--
+	--	selected_layers --return
+	--),
 
 	/*------------------------------------------------------------------------------
 		PRIVATE

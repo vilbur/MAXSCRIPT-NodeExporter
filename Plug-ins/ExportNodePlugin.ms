@@ -1,5 +1,5 @@
 
-plugin shape Export_Node
+plugin shape ExportNodePlugin
 
 name:	"Export Node"
 extends:	text
@@ -21,14 +21,14 @@ replaceUI:	true
 	function getAnimationKeys controller_type =
 	(
 		--format "\n"; print ".getAnimationKeys()"
-		_Export_node = this._getNodeObejct()
+		_ExportNodePlugin = this._getNodeObejct()
 
 
 		controller	= case controller_type of
 		(
-			#position:	_Export_node.position.controller
-			#rotation:	_Export_node.rotation.controller
-			#scale:	_Export_node.scale.controller
+			#position:	_ExportNodePlugin.position.controller
+			#rotation:	_ExportNodePlugin.rotation.controller
+			#scale:	_ExportNodePlugin.scale.controller
 			default:	return false
 		)
 
@@ -111,6 +111,9 @@ replaceUI:	true
 	(
   		--format "\n"; print ".onCreate()"
 		Delegate.size = this.size
+--		
+		--this._getNodeObejct() --return
+		this -- return
 	)
 
 	on attachedToNode _node  do

@@ -8,10 +8,10 @@ filein( getFilenamePath(getSourceFileName()) + "/ExportChecker/ExportChecker.ms"
   */
 struct ExporterDatasmith_v
 (
-	__construct = #( #export_nodes ),
+	__construct = #( #ExportNodePlugins ),
 
 	/* construct */
-	export_nodes = #(),
+	ExportNodePlugins = #(),
 
 	/* construct */
 	/* dependency */
@@ -27,7 +27,7 @@ struct ExporterDatasmith_v
 	(
 		GLOBAL_SELECTION_LAST_ENABLED = false
 
-		ExportChecker = ExportChecker_v export_nodes: export_nodes
+		ExportChecker = ExportChecker_v ExportNodePlugins: ExportNodePlugins
 
 		ExportChecker.validateNodes()
 
@@ -38,17 +38,17 @@ struct ExporterDatasmith_v
 		if( ExportChecker.groups_to_attach.count > 0 ) then
 			GroupToObjectBaker_v groups:ExportChecker.groups_to_attach
 
-		node_name = ExportChecker.export_nodes[1].name
+		node_name = ExportChecker.ExportNodePlugins[1].name
 
 		try
 		(
 			/* EXPORT */
-			for export_node in ExportChecker.export_nodes do
+			for ExportNodePlugin in ExportChecker.ExportNodePlugins do
 			(
 				if pre_export == false then
-					this._exportNode (export_node) (getUserProp export_node "export-dir")
+					this._exportNode (ExportNodePlugin) (getUserProp ExportNodePlugin "export-dir")
 				else
-					this._preExportNode (export_node) (getUserProp export_node "export-dir")
+					this._preExportNode (ExportNodePlugin) (getUserProp ExportNodePlugin "export-dir")
 			)
 		)
 		catch(
@@ -72,8 +72,8 @@ struct ExporterDatasmith_v
 
 		all_children	= #()
 
-		for export_node in export_nodes do
-			all_children += this._getAllChildren(export_node)
+		for ExportNodePlugin in ExportNodePlugins do
+			all_children += this._getAllChildren(ExportNodePlugin)
 
 		all_children --return
 	),
@@ -84,11 +84,11 @@ struct ExporterDatasmith_v
 
 	/** Export
 	 */
-	function _exportNode export_node export_dir =
+	function _exportNode ExportNodePlugin export_dir =
 	(
-		print("ExporterDatasmith_v._exportNode() " + export_node.name )
+		print("ExporterDatasmith_v._exportNode() " + ExportNodePlugin.name )
 
-		all_children = (this._getAllChildren(export_node))
+		all_children = (this._getAllChildren(ExportNodePlugin))
 
 		for o in all_children where o.ishidden do
 			o.ishidden = false
@@ -98,7 +98,7 @@ struct ExporterDatasmith_v
 		DatasmithExport.IncludeTarget	= #SelectedObjects
 		DatasmithExport.AnimatedTransforms	= #CurrentFrame
 
-		DatasmithExport.Export (export_dir+"\\"+export_node.name+".udatasmith") true    -- set your own path and filename
+		DatasmithExport.Export (export_dir+"\\"+ExportNodePlugin.name+".udatasmith") true    -- set your own path and filename
 	),
 
 	/** Save Eported nodes as separated max files in export folder
@@ -106,17 +106,17 @@ struct ExporterDatasmith_v
 	  *
 	  *
 	 */
-	function _preExportNode export_node export_dir =
+	function _preExportNode ExportNodePlugin export_dir =
 	(
-		print("ExporterDatasmith_v._exportNode() " + export_node.name )
+		print("ExporterDatasmith_v._exportNode() " + ExportNodePlugin.name )
 
-		select (this._getAllChildren(export_node))
+		select (this._getAllChildren(ExportNodePlugin))
 
 		selection.isHidden = false
 
 		--DatasmithExport.IncludeTarget	= #SelectedObjects
 		--DatasmithExport.AnimatedTransforms	= #CurrentFrame
- 		saveNodes selection (export_dir+"\\"+export_node.name+".max") quiet:true
+ 		saveNodes selection (export_dir+"\\"+ExportNodePlugin.name+".max") quiet:true
 
 	),
 

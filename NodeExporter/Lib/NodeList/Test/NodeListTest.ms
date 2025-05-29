@@ -10,9 +10,9 @@ pos_A = [0, 0,0]
 pos_B = [0, 110,0]
 pos_C = [0, 200,0]
 
---node_A = Export_node name:"Node A"  text:"Node A" pos:pos_A
---node_B = Export_node name:"Node B"  text:"Node B" pos:pos_B
---node_C = Export_node name:"Node C"  text:"Node C" pos:pos_C
+--node_A = ExportNodePlugin name:"Node A"  text:"Node A" pos:pos_A
+--node_B = ExportNodePlugin name:"Node B"  text:"Node B" pos:pos_B
+--node_C = ExportNodePlugin name:"Node C"  text:"Node C" pos:pos_C
 --
 --
 --LayerManager.newLayerFromName "Layer A"

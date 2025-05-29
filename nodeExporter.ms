@@ -1,20 +1,21 @@
 clearListener(); print("Cleared in:"+getSourceFileName())
 
+format "classOf ExportNode X: %\n" (classOf ExportNode)
+
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/FileInImporter/FileInImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/FileInImporter/FileInImporter.ms"
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/StartUpScriptImporter/StartUpScriptImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/StartUpScriptImporter/StartUpScriptImporter.ms"
-filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/PlugInImporter/PlugInImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/PlugInImpoerter/PlugInImpoerter.ms"
-
-filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/MacroscriptGenerator/generateMacroscripts.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/MacroscriptGenerator/generateMacroscripts.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/PlugInImporter/PlugInImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/PlugInImporter/PlugInImporter.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/MacroscriptGenerator/generateMacroscripts.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/MacroscriptGenerator/generateMacroscripts.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/ContentLoader/ContentLoader.ms" )	-- "./../MAXSCRIPT-UI-framework/Lib/ContentLoader/ContentLoader.ms"
 
 
+format "classOf ExportNode XX: %\n" (classOf ExportNode)
 --RUN_ON_STARTUP = true
 
 --global NodeExporter
 global DIALOG_nodeexporter
 
-global DIALOG_nodeexporter
 global ROLLOUT_3d_print
 --global ROLLOUT_viewports
 
@@ -27,14 +28,14 @@ current_dir = getFilenamePath(getSourceFileName())
 
 current_dir_name = trimRight ( pathConfig.stripPathToLeaf(current_dir)) "\\"
 
-rollouts_dir = "$userscripts/"+current_dir_name+"/"+content_dir+"/rollouts-Tools"
+rollouts_dir = "$userscripts/"+current_dir_name+"/"+content_dir+"/rollouts-ExportTo"
 
 /*------------------------------------------------------------------------------
 	IMPORT FILES
 --------------------------------------------------------------------------------*/
 std_scripts = #(
-	--( current_dir + "/../MAXSCRIPT-UI-framework/Lib/CallbackManager/CallbackManager.ms"),	--"./../MAXSCRIPT-UI-framework/Lib/CallbackManager/CallbackManager.ms"
-	"/rollout-EXPORT/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms", -- "./VilTools/rollouts-Tools/rollout-EXPORT/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms"
+	( current_dir + "/../MAXSCRIPT-UI-framework/Lib/CallbackManager/CallbackManager.ms"),	--"./../MAXSCRIPT-UI-framework/Lib/CallbackManager/CallbackManager.ms"
+	--"/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms", -- "./VilTools/rollouts-Tools/rollout-EXPORT/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms"
 	
 	"" -- last blank item to prevent errors on development
 )
@@ -55,7 +56,7 @@ StartUpScriptImporter = StartUpScriptImporter_v root:rollouts_dir filename:conte
 /*------------------------------------------------------------------------------
 	INSTALL STD SCRIPTS
 --------------------------------------------------------------------------------*/
-StartUpScriptImporter.createStartUpFile(std_scripts) std:true
+--StartUpScriptImporter.createStartUpFile(std_scripts) std:true
 
 /*------------------------------------------------------------------------------
 	INSTALL START SCRIPTS
@@ -65,7 +66,10 @@ StartUpScriptImporter.createStartUpFile(std_scripts) std:true
 /*------------------------------------------------------------------------------
 	INSTALL PLUGINS
 --------------------------------------------------------------------------------*/
---(PlugInImporter_v ( rollouts_dir + "/rollout-EXPORT/Lib/ExportNode/ExportNodePlugin.ms" )).install() --"./VilTools/rollouts-Tools/rollout-EXPORT/Lib/ExportNode/ExportNodePlugin.ms"
+--(PlugInImporter_v ( "$userscripts/" +current_dir_name +"/"+content_dir + "/Lib/ExportNode/ExportNodePlugin.ms" )).install() --"./VilTools/rollouts-Tools/rollout-EXPORT/Lib/ExportNode/ExportNodePlugin.ms"
+(PlugInImporter_v ( "$userscripts/" +current_dir_name + "/Plug-ins/ExportNodePlugin.ms" )).install() --"./VilTools/rollouts-Tools/rollout-EXPORT/Lib/ExportNode/ExportNodePlugin.ms"
+
+
 
 /*------------------------------------------------------------------------------
 	GENERATE MACROS
@@ -132,7 +136,7 @@ try(
 	/* CREATE DIALOG */
 	NodeExporter = ContentLoader.create height:1024
 
-	NodeExporter.register()
+	--NodeExporter.register()
 
 )catch(
 	format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())

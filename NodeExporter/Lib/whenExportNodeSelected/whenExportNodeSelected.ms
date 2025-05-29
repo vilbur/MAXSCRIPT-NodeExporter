@@ -1,4 +1,4 @@
-global WHEN_EXPORT_NODE_SELECTED = #()
+global WHEN_ExportNodePlugin_SELECTED = #()
 
 /** When attribute change https://help.autodesk.com/view/MAXDEV/2024/ENU/?guid=GUID-513285B3-DBF6-471E-B587-B5BE14D4D875
  * 
@@ -10,26 +10,26 @@ function whenExportNodeSelected objs =
 	 --format "\n"; print "whenExportNodeSelected()"
 
 	if classOf objs == Array then
-		join WHEN_EXPORT_NODE_SELECTED objs
+		join WHEN_ExportNodePlugin_SELECTED objs
 
 	else
-		append WHEN_EXPORT_NODE_SELECTED objs
+		append WHEN_ExportNodePlugin_SELECTED objs
 
-	deleteAllChangeHandlers id:#WHEN_EXPORT_NODE_SELECTED
+	deleteAllChangeHandlers id:#WHEN_ExportNodePlugin_SELECTED
 
 	
-	WHEN_EXPORT_NODE_SELECTED = makeUniqueArray WHEN_EXPORT_NODE_SELECTED
+	WHEN_ExportNodePlugin_SELECTED = makeUniqueArray WHEN_ExportNodePlugin_SELECTED
 	
-	WHEN_EXPORT_NODE_SELECTED = for export_node in WHEN_EXPORT_NODE_SELECTED where isValidNode export_node collect export_node
+	WHEN_ExportNodePlugin_SELECTED = for ExportNodePlugin in WHEN_ExportNodePlugin_SELECTED where isValidNode ExportNodePlugin collect ExportNodePlugin
 
-	--format "WHEN_EXPORT_NODE_SELECTED.count: %\n" WHEN_EXPORT_NODE_SELECTED.count
+	--format "WHEN_ExportNodePlugin_SELECTED.count: %\n" WHEN_ExportNodePlugin_SELECTED.count
 	
-	when select WHEN_EXPORT_NODE_SELECTED changes id:#WHEN_EXPORT_NODE_SELECTED obj do
+	when select WHEN_ExportNodePlugin_SELECTED changes id:#WHEN_ExportNodePlugin_SELECTED obj do
 	(
 
 		if obj.isSelected then
 		(
-			format "WHEN_EXPORT_NODE_SELECTED: %\n" obj
+			format "WHEN_ExportNodePlugin_SELECTED: %\n" obj
 			
 			NodeList = NodeList_v(DIALOG_nodeexporter.ML_nodes)
 			
@@ -41,7 +41,7 @@ function whenExportNodeSelected objs =
 			
 			DIALOG_nodeexporter.BP_export_path.text = NodeList.getExportPathText(selected_nodes)
 	
-			DIALOG_nodeexporter.ML_node_groups.items = sort (makeUniqueArray(for obj in shapes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect obj.parent.name))
+			DIALOG_nodeexporter.ML_node_groups.items = sort (makeUniqueArray(for obj in shapes where classOf obj == ExportNodePlugin and obj.parent != undefined and isGroupHead obj.parent collect obj.parent.name))
 		)
 		else
 			DIALOG_nodeexporter.BP_export_path.text = ""
@@ -54,7 +54,7 @@ function whenExportNodeSelected objs =
 function whenExportNodeSelectedStart =
 (
 	-- format "\n"; print whenExportNodeSelectedStart()"
-	whenExportNodeSelected(WHEN_EXPORT_NODE_SELECTED)
+	whenExportNodeSelected(WHEN_ExportNodePlugin_SELECTED)
 )
 
 /** Stop events
@@ -62,5 +62,5 @@ function whenExportNodeSelectedStart =
 function whenExportNodeSelectedStop =
 (
 	-- format "\n"; print whenExportNodeSelectedStop()"
-	deleteAllChangeHandlers id:#WHEN_EXPORT_NODE_SELECTED
+	deleteAllChangeHandlers id:#WHEN_ExportNodePlugin_SELECTED
 )

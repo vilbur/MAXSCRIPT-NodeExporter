@@ -21,7 +21,7 @@ icon:	"height:64|across:2|offset:[0,16]"
 
 	if( selected_nodes.count > 0 ) then
 		with redraw off
-			(ExporterDatasmith_v export_nodes:selected_nodes).export()
+			(ExporterDatasmith_v ExportNodePlugins:selected_nodes).export()
 	else
 		messageBox "Export node is not selected" title:"Export node error"
 

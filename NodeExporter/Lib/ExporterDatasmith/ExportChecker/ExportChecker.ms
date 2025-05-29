@@ -13,10 +13,10 @@ filein( getFilenamePath(getSourceFileName()) + "/GroupToObjectBaker/GroupToObjec
  */
 struct ExportChecker_v
 (
-	--__construct = #( #export_nodes ),
+	--__construct = #( #ExportNodePlugins ),
 
 	/* construct */
-	export_nodes = #(),
+	ExportNodePlugins = #(),
 
 	/* dependency */
 	/* reference */
@@ -48,7 +48,7 @@ struct ExportChecker_v
 		--for _node in ingnore_attach_objects do
 			--format "_node	= % \n" _node.name
 
-		for _node in export_nodes do
+		for _node in ExportNodePlugins do
 			for obj in this._getAllChildren(_node) where findItem ingnore_attach_objects obj == 0 do
 			(
 				default_object_names = "Group\d+|Object\d+|Box\d+|Sphere\d+|Cylinder\d+|Line\d+|Circle\d+|Text\d+"
@@ -66,17 +66,17 @@ struct ExportChecker_v
 
 		format "% OBJECTS WITH DEFAULT NAMES SELECTED\n" objects_to_check.count
 		--holdMaxFile()
-		----format "ExportChecker.export_nodes	= % \n" ExportChecker.export_nodes
+		----format "ExportChecker.ExportNodePlugins	= % \n" ExportChecker.ExportNodePlugins
 		--if( ExportChecker.groups_to_attach.count > 0 ) then
 		--	GroupAttacher_v groups:ExportChecker.groups_to_attach
 		--
-		--node_name = ExportChecker.export_nodes[1].name
+		--node_name = ExportChecker.ExportNodePlugins[1].name
 		--
 		--try
 		--(
 		--	/* EXPORT */
-		--	for export_node in ExportChecker.export_nodes do
-		--		this._exportNode (export_node) (getUserProp export_node "export-dir")
+		--	for ExportNodePlugin in ExportChecker.ExportNodePlugins do
+		--		this._exportNode (ExportNodePlugin) (getUserProp ExportNodePlugin "export-dir")
 		--)
 		--catch(
 		--	messageBox "Export Failed" title:"Export Failed"  beep:true
@@ -97,15 +97,15 @@ struct ExportChecker_v
 	function analyzeGroups =
 	(
 		--format "\n"; print "ExportChecker_v._testGroups()"
-		for export_node in export_nodes where export_node != undefined  do
-			join groups_to_attach  (this._getGroupsForAttach(export_node))
+		for ExportNodePlugin in ExportNodePlugins where ExportNodePlugin != undefined  do
+			join groups_to_attach  (this._getGroupsForAttach(ExportNodePlugin))
 	),
 
 	/** _validate nodes
 	 */
 	function validateNodes =
 	(
-		export_nodes = for export_node in export_nodes where export_node != undefined and ( export_dir = getUserProp export_node "export-dir") != undefined collect export_node
+		ExportNodePlugins = for ExportNodePlugin in ExportNodePlugins where ExportNodePlugin != undefined and ( export_dir = getUserProp ExportNodePlugin "export-dir") != undefined collect ExportNodePlugin
 	),
 
 
@@ -117,10 +117,10 @@ struct ExportChecker_v
 	  *
 	  * @return	Array	of group nodes
 	 */
-	function _getGroupsForAttach export_node =
+	function _getGroupsForAttach ExportNodePlugin =
 	(
 		--format "\n"; print "ExportChecker_v._getGroupsForAttach()"
-		node_children = this._getAllChildren (export_node)
+		node_children = this._getAllChildren (ExportNodePlugin)
 
 		for _group in this._getGroups(node_children) where not this._containGroup(_group) and not this._isUpperCaseName(_group.name) collect _group
 	),

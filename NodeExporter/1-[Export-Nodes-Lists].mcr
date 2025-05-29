@@ -5,7 +5,9 @@ filein( getFilenamePath(getSourceFileName()) + "/Lib/whenExportNodeSelected/when
 
 filein( getFilenamePath(getSourceFileName()) + "/Lib/ExporterSetup/ExporterSetup.ms" )	-- "./Lib/ExporterSetup/ExporterSetup.ms"
 
-	filein( getFilenamePath(getSourceFileName()) + "/Lib/LayersVisibility/LayersVisibility.ms" )	--"./Lib/LayersVisibility/LayersVisibility.ms"
+filein( getFilenamePath(getSourceFileName()) + "/Lib/LayersVisibility/LayersVisibility.ms" )	--"./Lib/LayersVisibility/LayersVisibility.ms"
+
+filein( getFilenamePath(getSourceFileName()) + "/Lib/ExporterDatasmith/resizeNodeByChildren/resizeNodeByChildren.ms" )	--"./Lib/ExporterDatasmith/resizeNodeByChildren/resizeNodeByChildren.ms"
 
 /*==============================================================================
 
@@ -21,7 +23,7 @@ global NODE_GROUP_NAME_ROLLOUT
 	Groups are attached into objects if their name IS NOT UPPERCASE
 
  */
-macroscript	_export_node_create
+macroscript	_ExportNodePlugin_create
 category:	"_Export"
 buttontext:	"Create"
 toolTip:	"Create Export Node\n\nNode name is exported filename\n\nSelected objects will be linked to new node"
@@ -32,16 +34,22 @@ icon:	"across:3|width:64|height:48|pos:[ 184, 24 ]"
 	--format "eventFired	= % \n" eventFired
 	undo "Create Export Node" on
 	(
+		format "classOf ExportNodePlugin A: %\n" (classOf ExportNodePlugin)
+
 		ExportNode 	= ExportNode_v()
 
-		ExportNode.create()
+		format "classOf ExportNodePlugin B: %\n" (classOf ExportNodePlugin)
 
+		ExportNodePluginx = ExportNode.create()
+		
+		format "ExportNodePluginx: %\n" ExportNodePluginx
+		--resizeNodeByChildren($ExportNodePlugin)
 	)
 )
 
 /**  LINK TO NODE
  */
-macroscript	_export_node_link_selection
+macroscript	_ExportNodePlugin_link_selection
 category:	"_Export"
 buttontext:	"Link"
 toolTip:	"LINK TO NODE:\n(link selected obgjects to selcted node)"
@@ -89,7 +97,7 @@ icon:	"pos:[ 250, 24 ]"
 
 /**  LOAD
  */
-macroscript	_export_node_load
+macroscript	_ExportNodePlugin_load
 category:	"_Export"
 buttontext:	"Refresh"
 toolTip:	"Refresh nodes in list"
@@ -97,7 +105,7 @@ icon:	"pos:[ 316, 24 ]"
 
 (
 	--format "eventFired	= % \n" eventFired
-	NodeList = NodeList_v(DIALOG_nodeexporter.ML_nodes)
+	NodeList = NodeList_v(DIALOG_nodeexporter.ML_nodes) 
 
 	all_nodes_in_scene = NodeList.loadNodes()
 
@@ -156,7 +164,7 @@ icon:	"pos:[ 184, 72]"
 
 					destroyDialog NODE_GROUP_NAME_ROLLOUT
 					
-					macros.run "_Export" "_export_node_load"
+					macros.run "_Export" "_ExportNodePlugin_load"
 				)
 				else if e.KeyCode == e.KeyCode.Escape then
 					destroyDialog NODE_GROUP_NAME_ROLLOUT
@@ -175,7 +183,7 @@ icon:	"pos:[ 184, 72]"
 
 /**  Unify
  */
-macroscript	_export_node_unify
+macroscript	_ExportNodePlugin_unify
 category:	"_Export"
 buttontext:	"Unify"
 toolTip:	"Set size and path of selected export nodes\n\n1st selected node is source object"
@@ -214,7 +222,7 @@ icon:	"pos:[ 250, 72]"
 
 /**  NODE LIST
  */
-macroscript	_export_nodes_list
+macroscript	_ExportNodePlugins_list
 category:	"_Export"
 buttontext:	"Nodes"
 toolTip:	"Nodes to export"
@@ -322,7 +330,7 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 		actionMan.executeAction 0 "59231"  -- Selection: Selection Lock Toggle
 	
 	
-	selected_nodes = for obj in selection where classOf obj == Export_Node collect obj
+	selected_nodes = for obj in selection where classOf obj == ExportNodePlugin collect obj
 	format "selected_nodes.count: %\n" selected_nodes.count
 	format "selected_nodes: %\n" selected_nodes
 	/* OPEN PARENT GROUPS OF SELECTEDS NODES */
@@ -337,15 +345,16 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	format "nodes_and_objects.count: %\n" nodes_and_objects.count
 	format "nodes_and_objects: %\n" nodes_and_objects
 	
-	
-	select nodes_and_objects
-	
+	IsolateSelection.ExitIsolateSelectionMode()
 
-	LayersVisibility.hideUnselected ISOLATE:true
+	LayersVisibility.showOnly nodes_and_objects ISOLATE:true
+	
+	select all_children
 
 	max tool zoomextents all
 
 	select selected_nodes
+	
 	--layers_of_objects = LayersManager.getLayersByObjects( nodes_and_objects  )
 	--
 	----format "\n-----------\nARRAY:layers_of_objects:\n";  for layer in layers_of_objects do format "layer:	%\n" layer.name
@@ -362,7 +371,6 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	--
 	--
 	--clearSelection()
-	IsolateSelection.ExitIsolateSelectionMode()
 	--
 	--
 	--
@@ -400,7 +408,7 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 
 /**  SELECT GROUPS OF NODES
  */
-macroscript	_export_nodes_groups_list_select
+macroscript	_ExportNodePlugins_groups_list_select
 category:	"_Export"
 buttontext:	"Node Groups"
 toolTip:	"Nodes to export"
@@ -414,7 +422,7 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:9|width:160|offs
 
 	selected_groups = #()
 
-	all_groups = makeUniqueArray( for obj in shapes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect  obj.parent)
+	all_groups = makeUniqueArray( for obj in shapes where classOf obj == ExportNodePlugin and obj.parent != undefined and isGroupHead obj.parent collect  obj.parent)
 
 	group_names_in_selection = for index in eventFired.Control.selection as Array collect eventFired.Control.items[index]
 
@@ -427,7 +435,7 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:9|width:160|offs
 /**  	GROUP LIST DOUBLE CLICK
 
  */
-macroscript	_export_nodes_groups_list_isolate
+macroscript	_ExportNodePlugins_groups_list_isolate
 category:	"_Export"
 buttontext:	"Node Groups"
 toolTip:	"Nodes to export"
@@ -437,7 +445,7 @@ icon:	"control:multilistbox|event:#doubleClicked"
 
 	
 	
-	all_groups = makeUniqueArray( for obj in shapes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect obj.parent)
+	all_groups = makeUniqueArray( for obj in shapes where classOf obj == ExportNodePlugin and obj.parent != undefined and isGroupHead obj.parent collect obj.parent)
 	
 	group_names_in_selection = for index in eventFired.Control.selection as Array collect eventFired.Control.items[index]
 	
@@ -475,7 +483,7 @@ icon:	"control:multilistbox|event:#doubleClicked"
 --
 --	if( selected_nodes.count > 0 ) then
 --		with redraw off
---			(ExporterDatasmith_v export_nodes:selected_nodes).export pre_export:true
+--			(ExporterDatasmith_v ExportNodePlugins:selected_nodes).export pre_export:true
 --	else
 --		messageBox "Export node is not selected" title:"Export node error"
 --
@@ -509,7 +517,7 @@ icon:	"control:multilistbox|event:#doubleClicked"
 --	format "selected_nodes	= % \n" selected_nodes
 --
 --	if( selected_nodes.count > 0 ) then
---		(ExportChecker_v export_nodes:selected_nodes).test()
+--		(ExportChecker_v ExportNodePlugins:selected_nodes).test()
 --	else
 --		messageBox "Export node is not selected" title:"Export node error"
 --

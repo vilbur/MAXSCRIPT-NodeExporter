@@ -19,7 +19,7 @@ struct ExporterSetup_v
 	/* properties */
 	--params	= Dictionary #( #size, 1 ) #( #key2, #value2 ), -- PREPARED IF MORE THAN SIZE PARAMETER WILL BE USED
 
-	export_nodes,
+	ExportNodePlugins,
 
 	DIALOG_nodeexporter, -- UI rollout
 
@@ -43,7 +43,7 @@ struct ExporterSetup_v
 
 		if( (this._getSelectedNodes()).count > 0 ) then
 		(
-			format "EXPORT_NODES: %\n" export_nodes
+			format "ExportNodePluginS: %\n" ExportNodePlugins
 
 			case export_type of
 			(
@@ -69,7 +69,7 @@ struct ExporterSetup_v
 	function _getSelectedNodes =
 	(
 		--format "\n"; print "ExporterSetup_v._getSelectedNodes()"
-		this.export_nodes = ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInList())
+		this.ExportNodePlugins = ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInList())
 	),
 
 	/** Export obj
@@ -89,7 +89,7 @@ struct ExporterSetup_v
 
 		format "\nEXPORTING 3D PRINT\n"
 
-		Exporter =	(PrintExporter_v(this.export_nodes))
+		Exporter =	(PrintExporter_v(this.ExportNodePlugins))
 
 		print_rollout = DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print
 
@@ -133,12 +133,12 @@ struct ExporterSetup_v
 
 	--/** Get export file path
 	-- */
-	--function _getExportFilePath export_node =
+	--function _getExportFilePath ExportNodePlugin =
 	--(
 	--	--format "\n"; print "ExporterSetup_v._getExportFilePath()"
-	--	subdir = if this.DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked then "/"+export_node.name + "/" else "/"
+	--	subdir = if this.DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked then "/"+ExportNodePlugin.name + "/" else "/"
 	--
-	--	export_path =  (this._getExportDir(export_node.export_dir)) + subdir + export_node.name + ".obj"
+	--	export_path =  (this._getExportDir(ExportNodePlugin.export_dir)) + subdir + ExportNodePlugin.name + ".obj"
 	--
 	--	( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\\\" -- return
 	--),

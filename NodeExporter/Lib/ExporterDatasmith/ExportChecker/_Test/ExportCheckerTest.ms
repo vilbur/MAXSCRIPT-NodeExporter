@@ -8,7 +8,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../ExportChecker.ms" )
 if maxFileName != "ExportCheckerTest.max" then
 	loadMaxFile( getFilenamePath(getSourceFileName()) + "/Scene/ExportCheckerTest.max" )
 
-ExportChecker = ExportChecker_v export_nodes: #($ExportNode)
+ExportChecker = ExportChecker_v ExportNodePlugins: #($ExportNode)
 
 ExportChecker.analyzeGroups()
 

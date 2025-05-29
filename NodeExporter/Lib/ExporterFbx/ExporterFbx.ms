@@ -13,7 +13,7 @@
  */
 struct ExporterFbx_v
 (
-	export_node,	-- used node for export
+	ExportNodePlugin,	-- used node for export
 	
 	export_dir,
 	

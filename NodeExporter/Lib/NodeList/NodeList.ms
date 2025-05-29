@@ -61,23 +61,23 @@ struct NodeList_v
 	(
 		--print "NodeList_v.getSelectedNodesInScene()"
 		--nodes_selected_in_scene = this._getNodesInScene()
-		for obj in selection where classOf obj == Export_Node collect obj
+		for obj in selection where classOf obj == ExportNodePlugin collect obj
 	),
 
 	/** Get all nodes in scene
 	 */
 	function getAllNodesInScene =
 	(
-		for obj in shapes where classOf obj == Export_Node collect obj
+		for obj in shapes where classOf obj == ExportNodePlugin collect obj
 	),
 
 
 	/** Get groups of export nodes
 	 */
-	function getGroupsOfExportNodes export_nodes =
+	function getGroupsOfExportNodes ExportNodePlugins =
 	(
 		--format "\n"; print "NodeList_v.getGroupsOfExportNodes()"
-		groups_in_scene = makeUniqueArray( for obj in export_nodes where classOf obj == Export_Node and obj.parent != undefined and isGroupHead obj.parent collect obj.parent )
+		groups_in_scene = makeUniqueArray( for obj in ExportNodePlugins where classOf obj == ExportNodePlugin and obj.parent != undefined and isGroupHead obj.parent collect obj.parent )
 		
 		group_names = for group_in_scene in groups_in_scene collect group_in_scene.name
 		
@@ -88,10 +88,10 @@ struct NodeList_v
 	  * 
 	  * @return string text for browse path control
 	 */
-	function getExportPathText export_nodes =
+	function getExportPathText ExportNodePlugins =
 	(
 		--format "\n"; print "NodeList_v.getExportPathText()"
-		export_dirs = for export_node in export_nodes  collect export_node.export_dir
+		export_dirs = for ExportNodePlugin in ExportNodePlugins  collect ExportNodePlugin.export_dir
 
 		case (export_dirs_unique = (makeUniqueArray export_dirs)).count of
 			(
@@ -112,14 +112,14 @@ struct NodeList_v
 
 	/** Select child nodes
 	 */
-	function getAllChildren export_nodes =
+	function getAllChildren ExportNodePlugins =
 	(
 		--format "\n"; print "NodeList_v.selectChildNodes()"
 
 		all_children	= #()
 
-		for export_node in export_nodes do
-			all_children += this._getAllChildren(export_node)
+		for ExportNodePlugin in ExportNodePlugins do
+			all_children += this._getAllChildren(ExportNodePlugin)
 
 		all_children --return
 	),
@@ -133,7 +133,7 @@ struct NodeList_v
 	(
 		--format "\n"; print "NodeList_v.getNodesByName()"
 
-		for obj in shapes where classOf obj == Export_Node and findItem node_names obj.name collect obj
+		for obj in shapes where classOf obj == ExportNodePlugin and findItem node_names obj.name collect obj
 	),
 
 	/**  Get all nested children

@@ -15,7 +15,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../PrinterVolume/PrinterVolume.
 struct PrintExporter_v
 (
 	/* construct */
-	export_nodes,
+	ExportNodePlugins,
 
 
 	/* properties */
@@ -60,7 +60,7 @@ struct PrintExporter_v
 
 			this._fixExportPosition()
 
-			for selected_node in this.export_nodes do
+			for selected_node in this.ExportNodePlugins do
 				this._exportNode (selected_node)
 
 			this._setSuccessMessage()
@@ -84,12 +84,12 @@ struct PrintExporter_v
 
 	/** Get export file path
 	 */
-	function getExportFilePath export_node =
+	function getExportFilePath ExportNodePlugin =
 	(
 		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
-		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+export_node.name + "/" else "/"
+		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
 
-		export_path =  (this._getExportDir(export_node.export_dir)) + subdir + export_node.name + "." + this.params[#EXPORT_FORMAT]
+		export_path =  (this._getExportDir(ExportNodePlugin.export_dir)) + subdir + ExportNodePlugin.name + "." + this.params[#EXPORT_FORMAT]
 
 		( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\\\" -- return
 	),
@@ -121,15 +121,15 @@ struct PrintExporter_v
 		EXPORT NODE
 
 	--------------------------------------------------------------------------------*/
-	function _exportNode export_node =
+	function _exportNode ExportNodePlugin =
 	(
 		format "\n"; print "PrintExporter_v._exportNode()"
-		format "EXPORT_NODE: %\n" export_node
+		format "ExportNodePlugin: %\n" ExportNodePlugin
 
 		max create mode
 
-		export_path 	= this.getExportFilePath(export_node)
-		node_children	= export_node.getAllChildren()
+		export_path 	= this.getExportFilePath(ExportNodePlugin)
+		node_children	= ExportNodePlugin.getAllChildren()
 		export_objects	= node_children + this.fix_position_dummy
 		--format "EXPORT_OBJECTS: %\n" export_objects
 
@@ -235,13 +235,13 @@ struct PrintExporter_v
 
 		if this.params[#PROJECT_FILE_OPEN] then
 		(
-			node_groups = makeUniqueArray( for _node in this.export_nodes where _node.parent != undefined and isGroupHead _node.parent collect _node.parent)
+			node_groups = makeUniqueArray( for _node in this.ExportNodePlugins where _node.parent != undefined and isGroupHead _node.parent collect _node.parent)
 
 			if node_groups.count > 0 then
 			(
 				extension = this.open_in_programs[this.params[#OPEN_IN]][2]
 
-				final_file = (this._getExportDir(this.export_nodes[1].export_dir)) + "\\" + node_groups[1].name + "." + extension
+				final_file = (this._getExportDir(this.ExportNodePlugins[1].export_dir)) + "\\" + node_groups[1].name + "." + extension
 
 				if not doesFileExist final_file then
 					copyFile  ( getFilenamePath(getSourceFileName()) + "..\\..\\Final-Files-Templates\\template." + extension ) final_file -- COPY EMPTY FILE "./../../Final-Files-Templates/template.chitubox"
@@ -303,7 +303,7 @@ struct PrintExporter_v
 		--format "\n"; print "ExporterSetup_v._getLastKeyOfRotateAnimation()"
 		last_keyframe 	= 0
 
-		for export_node in this.export_nodes where (node_anim_keys = export_node.getAnimationKeys(controller_type) ).count > 0 do
+		for ExportNodePlugin in this.ExportNodePlugins where (node_anim_keys = ExportNodePlugin.getAnimationKeys(controller_type) ).count > 0 do
 			if node_anim_keys[node_anim_keys.count] > last_keyframe then  -- get last key if higher
 				last_keyframe = node_anim_keys[node_anim_keys.count]
 
@@ -311,7 +311,7 @@ struct PrintExporter_v
 	),
 
 
-	/** Export dir consist of CURRENT SCENE PATH + RELATIVE PATH of Export_Node.export_dir
+	/** Export dir consist of CURRENT SCENE PATH + RELATIVE PATH of ExportNodePlugin.export_dir
 	*
 	*/
 	function _getExportDir node_export_dir =
