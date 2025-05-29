@@ -41,14 +41,6 @@ struct LayersVisibility_v
 		GET LAYERS
 	--------------------------------------------------------------------------------*/
 
-	--/** Get current
-	--  *
-	--  */
-	--function getCurrent =
-	--(
-	--	for layer in this.getAllLayers() where layer.current do return layer
-	--),
-
 	/** Get layers
 	  *
 	  */
@@ -58,33 +50,6 @@ struct LayersVisibility_v
 
 		for layer in layers where (layer = this._getLayer(layer)) != undefined collect layer
 	),
-
-	--/** Get selected layers
-	--  *  1) By selection in layer manager
-	--  *  2) By current objects selection if nothing is selected in layer manager
-	--  *
-	--  * Return array of layers
-	-- */
-	--function getSelectedLayers _objects =
-	--(
-	--	format "\n"; print "LayersManager_v.getSelectedLayers()"
-	--	--if  (selected_layers = this.getSelectedByManager()).count == 0 then
-	--		selected_layers = this.getLayersByObjects( _objects )
-	--	--selected_layers --return
-	--),
-
-	--/** Get selected layers from Layers manager
-	-- */
-	--function getSelectedByManager =
-	--(
-	--	format "\n"; print "LayersManager_v.getSelectedByManager()"
-	--	selected_layers = #()
-	--	
-	--	if LayerManager.isDialogOpen() and SceneExplorerInstance != undefined then
-	--		for layer in SceneExplorerInstance.SelectedItems() where superClassOf layer == Base_Layer collect this._getLayer(layer) --return
-	--	
-	--	selected_layers --return
-	--),
 
 	/** Get layers by objects
 	  *
@@ -207,19 +172,6 @@ struct LayersVisibility_v
 
 		children --return
 	),
-
-
-	--/** Get selected or current
-	--  *
-	--  */
-	--function getSelectedOrCurrent =
-	--(
-	--	format "\n"; print "LayersManager_v.getSelectedOrCurrent()"
-	--	if  (selected_layers = this.getSelectedLayers()).count == 0 then
-	--		selected_layers = #(this.getCurrent())
-	--
-	--	selected_layers --return
-	--),
 
 	/*------------------------------------------------------------------------------
 		PRIVATE

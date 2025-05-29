@@ -79,18 +79,22 @@ icon:	"pos:[ 250, 24 ]"
 
 			if( _nodes.count > 0 ) then
 			(
+				_node = _nodes[1]
+				
 				objects_to_link = getSelectionWithouGroupMembers()
 
-				for obj in objects_to_link do obj.parent = _nodes[1]
+				for obj in objects_to_link do obj.parent = _node
 
 				object_names = ""
 
 				for obj in objects_to_link do object_names += "\n" + obj.name
 
 				if objects_to_link.count < 200 then
-					messageBox ("OBJECTS: "+object_names+"\n\nNODE:\n" + _nodes[1].name ) title:"LINK TO NODE"  beep:false
+					messageBox ("OBJECTS: "+object_names+"\n\nNODE:\n" + _node.name ) title:"LINK TO NODE"  beep:false
 				else
 					messageBox ( objects_to_link.count as string + " OBJECTS HAS BEEN LINKED TO NODE:\n" + _nodes[1].name ) title:"LINK TO NODE"  beep:false
+					
+				_node.resizeNodeByChildren()
 			)
 		)
 )
