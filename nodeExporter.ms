@@ -9,16 +9,16 @@ filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/P
 
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/ContentLoader/ContentLoader.ms" )	-- "./../MAXSCRIPT-UI-framework/Lib/ContentLoader/ContentLoader.ms"
 
+filein( getFilenamePath(getSourceFileName()) + "/NodeExporter/rollouts-ExportTo/rollout-3D-PRINT/Lib/PrinterVolume/PrinterVolume.ms" )	--"./NodeExporter/rollouts-ExportTo/rollout-3D-PRINT/Lib/PrinterVolume/PrinterVolume.ms"
 
-format "classOf ExportNode XX: %\n" (classOf ExportNode)
---RUN_ON_STARTUP = true
 
---global NodeExporter
+
 global DIALOG_nodeexporter
-
 global ROLLOUT_3d_print
---global ROLLOUT_viewports
 
+
+if EXPORT_SIZE == undefined then 
+	global EXPORT_SIZE
 
 /* DIRECTORY WHERE TO LOAD CONTENT */ 
 content_dir = "NodeExporter"
@@ -137,6 +137,8 @@ try(
 	NodeExporter = ContentLoader.create height:1024
 
 	--NodeExporter.register()
+
+	macros.run "_Export" "_export_settings_set_size"
 
 )catch(
 	format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())

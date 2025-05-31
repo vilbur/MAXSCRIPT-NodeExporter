@@ -54,7 +54,7 @@ buttontext:	"Project File Open"
 icon:	"control:checkbox|across:2|offset:[ 12, 2 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 )
 
 /**
@@ -68,5 +68,5 @@ icon:	"control:checkbox|across:2|offset:[ 0, 2 ]"
 (
 	format "EventFired	= % \n" EventFired
 
-	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 )

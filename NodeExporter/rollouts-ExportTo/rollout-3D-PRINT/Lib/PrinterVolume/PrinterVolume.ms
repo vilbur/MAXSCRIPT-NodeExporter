@@ -10,7 +10,7 @@ struct PrinterVolume_v
 	dummy_name = "PRINT DUMMY VOLUME",
 
 	/* MILIMETERS ARE DEFAULT UNITS OF DIMENSIONS */
-	printer_size	= [ 120,	192, 250 ],	-- size of print plane, real size of creality LD-006 is 124 X	196
+	printer_size	= [ 120,	192, 200 ],	-- size of print plane, real size of creality LD-006 is 124 X	196
 	screw_position	= [ 34,	62 ],	-- position of screws
 	screw_radius	= 2,
 
@@ -39,7 +39,7 @@ struct PrinterVolume_v
 		(
 			dummy_object = case object_type of
 			(
-				#BOX:	Box	name:dummy_name  xray:true boxmode:true	wireColor:(color 0 255 0) length:printer_size[1] width:printer_size[2] height:printer_size[3]
+				#BOX:	Box	name:dummy_name  xray:true wireColor:(color 0 255 0) length:printer_size[1] width:printer_size[2] height:printer_size[3]
 				--#Rectangle:	Plane	name:dummy_name  xray:true boxmode:true	wireColor:(color 0 255 0) length:printer_size[1] width:printer_size[2] lengthsegs:1 widthsegs:1
 				#RECTANGLE:	Rectangle	name:dummy_name  wireColor:(color 0 255 0) length:printer_size[1] width:printer_size[2] cornerRadius:0 showFrozenInGray:false
 			)
@@ -53,24 +53,33 @@ struct PrinterVolume_v
 
 			--freeze dummy_object
 
+			/* ADD TO LAYER */ 
 			this._addToDefaultLayer(dummy_object)
 
+			/* LOCK TRANSFORMS */ 
+			setTransformLockFlags dummy_object #ALL
+
+			/* FREEZE */
+			freeze dummy_object
 		)
 		else
 			delete dummy_object
 	),
 
-	/** Volume dimension object
+	/** Create 4 boxes outside platform
+	  
+		This is workaround how to align multiple exports in Chitubox
+	  
 	 */
 	function fixPositionionObjects =
 	(
 		--format "\n"; print "PrinterVolume_v.volumeDimensionObject()"
 		dimension_objects = #()
-
+	
 		dummy_object = Box name:dummy_name length:fix_position_object_size width:fix_position_object_size height:fix_position_object_size pos:[ printer_size[2]+fix_position_object_offset, printer_size[1]+fix_position_object_offset, 0] pivot:[0,0,0] isSelected:on
-
+	
 		modPanel.addModToSelection ( symmetry PlanarX:true PlanarY:true PlanarZ:false) ui:on
-
+	
 		dummy_object --return
 	),
 

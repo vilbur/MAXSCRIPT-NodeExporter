@@ -82,9 +82,9 @@ struct ExportNode_v
 	 */
 	function _createNodeObject _name =
 	(
-		format "\n"; print "ExportNode_v._createNodeObject()"
+		-- format "\n"; print "ExportNode_v._createNodeObject()"
 		this._name = _name
-			format "classOf ExportNode: %\n" (classOf ExportNode)
+			-- format "classOf ExportNode: %\n" (classOf ExportNode)
 
 		--format "node_exists	= % \n" node_exists
 		if( this._getNodeByName(_name) == undefined ) then
@@ -111,7 +111,7 @@ struct ExportNode_v
 	 */
 	function _linkSelectedObejctsToNode =
 	(
-		format "\n"; print "ExportNode_v._linkSelectedObejctsToNode()"
+		-- format "\n"; print "ExportNode_v._linkSelectedObejctsToNode()"
 
 		for obj in this._selection do
 			obj.parent = this._node

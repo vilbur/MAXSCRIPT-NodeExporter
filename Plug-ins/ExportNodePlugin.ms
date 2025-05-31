@@ -64,7 +64,7 @@ replaceUI:	true
 	 */
 	function resizeNodeByChildren = 
 	(
-		clearListener(); print("Cleared in:\n"+getSourceFileName())
+		--clearListener(); print("Cleared in:\n"+getSourceFileName())
 	
 		/* 
 		Get bounding box XY size

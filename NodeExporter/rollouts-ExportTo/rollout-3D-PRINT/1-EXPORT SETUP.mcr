@@ -13,7 +13,7 @@ icon:	"control:checkbox|across:2|offset:[ 16, 0 ]"
 	format "EventFired	= % \n" EventFired
 	--format "EventFired.Control.triState	= % \n" EventFired.Control.triState
 	----format "CBX_FIX_POSITION_TRISTATE	= % \n" CBX_FIX_POSITION_TRISTATE
-	----(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
+	----(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 	--if EventFired.val == false and CBX_FIX_POSITION_TRISTATE != 2 then
 	--	EventFired.Control.triState = CBX_FIX_POSITION_TRISTATE = 2
 	--else
@@ -31,5 +31,5 @@ toolTip:	"Auto turn on first Meshmooth modifier on exported object.\n\nMeshmooth
 icon:	"control:checkbox|across:2|offset:[ 16, 0 ]"
 (
 	format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 )

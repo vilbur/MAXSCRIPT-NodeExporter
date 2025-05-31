@@ -14,7 +14,7 @@ buttontext:	"Exclude"
 icon:	"control:editText|across:1|offset:[ 0, 4 ]|value:support-source|toolTip:Do not export object, if it`s name match this text"
 (
 	format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#box)(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 )
 
 /*==============================================================================
@@ -35,10 +35,10 @@ icon:	"height:64|across:3|offset:[ 0, 6 ]"
 	clearListener(); print("Cleared in:\n"+getSourceFileName())
 
 	/* DEV */
-	filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrintExporter\PrintExporter.ms"
+	--filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrintExporter\PrintExporter.ms"
 
 	(ExporterSetup_v(#Print)).export()
-	--(PrinterVolume_v()).fixPositionionObjects(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).fixPositionionObjects(EXPORT_SIZE)
 )
 
 
@@ -54,9 +54,9 @@ icon:	"height:64|across:3|offset:[ 0, 6 ]"
 
 	--format "EventFired	= % \n" EventFired
 	clearListener(); print("Cleared in:\n"+getSourceFileName())
-	filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrinterVolume\PrinterVolume.ms"
+	--filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\VilTools\rollouts-Tools\rollout-EXPORT\rollouts-ExportTo\rollout-3D-PRINT\Lib\PrinterVolume\PrinterVolume.ms"
 
-	(PrinterVolume_v(DIALOG_nodeexporter.SPIN_export_size.value)).createVolume(#Rectangle)
+	(PrinterVolume_v(EXPORT_SIZE)).createVolume(#Rectangle)
 )
 
 
@@ -71,7 +71,7 @@ toolTip:	"Create\Delete dummy of 3D printer volume"
 icon:	"across:3|offset:[ 0, 6 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	(PrinterVolume_v(DIALOG_nodeexporter.SPIN_export_size.value)).createVolume(#box)
+	(PrinterVolume_v(EXPORT_SIZE)).createVolume(#box)
 )
 
 /*------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ toolTip:	"Open exported files of selected nodes"
 icon:	"height:64|across:3|offset:[ 0, 6 ]"
 (
 	--format "EventFired	= % \n" EventFired
-	--(PrinterVolume_v()).createVolume(#Rectangle)(DIALOG_nodeexporter.SPIN_export_size.value)
+	--(PrinterVolume_v()).createVolume(#Rectangle)(EXPORT_SIZE)
 
 	selected_nodes = ((NodeList_v(DIALOG_nodeexporter.ML_nodes)).getSelectedNodesInList())
 

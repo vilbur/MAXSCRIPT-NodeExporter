@@ -7,8 +7,6 @@ filein( getFilenamePath(getSourceFileName()) + "/Lib/ExporterSetup/ExporterSetup
 
 filein( getFilenamePath(getSourceFileName()) + "/Lib/LayersVisibility/LayersVisibility.ms" )	--"./Lib/LayersVisibility/LayersVisibility.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/Lib/ExporterDatasmith/resizeNodeByChildren/resizeNodeByChildren.ms" )	--"./Lib/ExporterDatasmith/resizeNodeByChildren/resizeNodeByChildren.ms"
-
 /*==============================================================================
 
 	NODES CONTROL
@@ -34,15 +32,15 @@ icon:	"across:3|width:64|height:48|pos:[ 184, 24 ]"
 	--format "eventFired	= % \n" eventFired
 	undo "Create Export Node" on
 	(
-		format "classOf ExportNodePlugin A: %\n" (classOf ExportNodePlugin)
+		-- format "classOf ExportNodePlugin A: %\n" (classOf ExportNodePlugin)
 
 		ExportNode 	= ExportNode_v()
 
-		format "classOf ExportNodePlugin B: %\n" (classOf ExportNodePlugin)
+		-- format "classOf ExportNodePlugin B: %\n" (classOf ExportNodePlugin)
 
 		ExportNodePluginx = ExportNode.create()
 		
-		format "ExportNodePluginx: %\n" ExportNodePluginx
+		-- format "ExportNodePluginx: %\n" ExportNodePluginx
 		--resizeNodeByChildren($ExportNodePlugin)
 	)
 )
@@ -161,7 +159,7 @@ icon:	"pos:[ 184, 72]"
 			(
 				if e.KeyCode == e.KeyCode.Enter then
 				(
-					format "GROUP NAME	= % \n" TextBox.Text
+					-- format "GROUP NAME	= % \n" TextBox.Text
 					_group = group _nodes name:TextBox.Text select:true
 
 					_nodes[1].layer.addnode _group
@@ -180,7 +178,7 @@ icon:	"pos:[ 184, 72]"
 		setFocus NODE_GROUP_NAME_ROLLOUT.TextBox
 	)
 
-	format "_nodes.count: %\n" _nodes.count
+	-- format "_nodes.count: %\n" _nodes.count
 	if _nodes.count > 0 then
 		_createGroupDialog()
 )
@@ -248,7 +246,7 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:19|width:160|off
 	
 	selected_nodes = NodeList.getSelectedNodesInList()
 
-	format "\n-----------\nARRAY:selected_nodes:\n";  for selected_node in selected_nodes do format "selected_node:	%\n" selected_node.name
+	-- format "\n-----------\nARRAY:selected_nodes:\n";  for selected_node in selected_nodes do format "selected_node:	%\n" selected_node.name
 
 	/* OPEN PARENT GROUPS OF SELECTEDS NODES */
 	for selected_node in selected_nodes where selected_node.parent != undefined and isGroupHead selected_node.parent do setGroupOpen selected_node.parent true
@@ -259,6 +257,7 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:19|width:160|off
 
 	whenExportNodeSelectedStart()
 
+	
 	/*------------------------------------------------------------------------------
 		DEPRECATED FOR UNREAL
 
@@ -298,7 +297,7 @@ toolTip:	"Isolate node children\n\nCtrl+LMB: Select node children."
 icon:	"control:multilistbox|across:2|event:#doubleClicked"
 (
 	clearListener(); print("Cleared in:\n"+getSourceFileName())
-	format "EventFired	= % \n" EventFired
+	-- format "EventFired	= % \n" EventFired
 	
 	function isSelectionLocked =
 	(
@@ -335,8 +334,8 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	
 	
 	selected_nodes = for obj in selection where classOf obj == ExportNodePlugin collect obj
-	format "selected_nodes.count: %\n" selected_nodes.count
-	format "selected_nodes: %\n" selected_nodes
+	-- format "selected_nodes.count: %\n" selected_nodes.count
+	-- format "selected_nodes: %\n" selected_nodes
 	/* OPEN PARENT GROUPS OF SELECTEDS NODES */
 	for selected_node in selected_nodes where selected_node.parent != undefined and isGroupHead selected_node.parent do setGroupOpen selected_node.parent true
 
@@ -344,10 +343,16 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	for selected_node in selected_nodes do all_children += (selected_node.getAllChildren())
 	--format "\n-----------\nARRAY:selected_nodes:\n";  for selected_node in selected_nodes do format "selected_node:	%\n" selected_node.name
 
-	--nodes_and_objects = makeUniqueArray (all_children + selected_nodes + (LayersManager.getObjectsInLayers(default_Layer)))
+
 	nodes_and_objects = makeUniqueArray (all_children + selected_nodes )
-	format "nodes_and_objects.count: %\n" nodes_and_objects.count
-	format "nodes_and_objects: %\n" nodes_and_objects
+	
+	if ( printer_volume = $'PRINT DUMMY VOLUME' ) != undefined then 
+		append nodes_and_objects printer_volume
+	
+	
+	--nodes_and_objects = makeUniqueArray (all_children + selected_nodes + (LayersManager.getObjectsInLayers(default_Layer)))
+	-- format "nodes_and_objects.count: %\n" nodes_and_objects.count
+	-- format "nodes_and_objects: %\n" nodes_and_objects
 	
 	IsolateSelection.ExitIsolateSelectionMode()
 
@@ -420,7 +425,7 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:9|width:160|offs
 --icon:	"control:multilistbox|across:2|items:#('1','2')" -- DEV
 (
 	--clearListener(); print("Cleared in:\n"+getSourceFileName())
-	format "eventFired	= % \n" eventFired
+	-- format "eventFired	= % \n" eventFired
 	--format "eventFired.Control.items	= % \n" eventFired.Control.items
 	--format "eventFired.Control.selection	= % \n" (eventFired.Control.selection as array )
 

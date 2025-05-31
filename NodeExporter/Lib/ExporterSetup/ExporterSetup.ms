@@ -85,7 +85,7 @@ struct ExporterSetup_v
 	function _exportPrint =
 	(
 		--format "\n"; print "ExporterSetup_v._exportPrint()"
-		--format "DIALOG_nodeexporter.SPIN_export_size.value:	% \n" DIALOG_nodeexporter.SPIN_export_size.value
+		--format "EXPORT_SIZE:	% \n" EXPORT_SIZE
 
 		format "\nEXPORTING 3D PRINT\n"
 
@@ -94,7 +94,7 @@ struct ExporterSetup_v
 		print_rollout = DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print
 
 		Exporter.params[#EXPORT_FORMAT]	= #("obj", "stl")[print_rollout.RB_export_format.state]
-		Exporter.params[#EXPORT_SCALE]	= DIALOG_nodeexporter.SPIN_export_size.value
+		Exporter.params[#EXPORT_SCALE]	= EXPORT_SIZE
 		Exporter.params[#SUBDIR_BY_NODE]	= DIALOG_nodeexporter.CBX_sub_directory_by_node_name.checked
 
 		Exporter.params[#FIX_POSITION]	= ROLLOUT_3d_print.CBX_fix_position.state
@@ -128,7 +128,7 @@ struct ExporterSetup_v
 	--function _getExportSize =
 	--(
 	--	--format "\n"; print "ExporterSetup_v._getExportSize()"
-	--	DIALOG_nodeexporter.SPIN_export_size.value --return
+	--	EXPORT_SIZE --return
 	--),
 
 	--/** Get export file path
