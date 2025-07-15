@@ -19,7 +19,7 @@ struct PrintExporter_v
 
 
 	/* properties */
-	params	= Dictionary #( #EXPORT_FORMAT, "obj" ) #( #EXPORT_SCALE, 1 ) #( #SUBDIR_BY_NODE, false ) #( #FIX_POSITION, false ) #( #OPEN_IN, 0 ) #( #PROJECT_FILE_OPEN, false ) #( #EXCLUDE, "" )  ,
+	params	= Dictionary #( #EXPORT_FORMAT, "obj" ) #( #EXPORT_SCALE, 1 ) #( #SUBDIR_BY_NODE, false ) #( #FIX_POSITION, false ) #( #OPEN_IN, 0 ) #( #PROJECT_FILE_OPEN, false ) #( #EXCLUDE, "" ) #( #ANIMATION, false )  ,
 
 	open_in_programs = #( #("C:/Program Files/CHITUBOX  V1.9.4/Chitubox.exe", "chitubox"), #("C:/Program Files/LycheeSlicer/LycheeSlicer.exe", "lys")),
 
@@ -32,6 +32,8 @@ struct PrintExporter_v
 	fix_position_dummy = #(),
 
 	success_message = "",
+	
+	offset = [0,0,0],
 
 	/* dependency */
 	Exporter,
@@ -54,20 +56,43 @@ struct PrintExporter_v
 
 		this._holdMaxState()
 
+		current_time = currentTime.frame as integer
+		format "current_time: %\n" current_time
+		end_time = if params[#ANIMATION] then animationRange.end.frame as integer else current_time
+		format "end_time: %\n" end_time
+		
+		export_keys = for export_key = current_time to end_time collect export_key 
+		format "EXPORT_KEYS: %\n" export_keys
+		
+		this._fixExportPosition()
+		
 		try(
 
-			this._setExportKeyFrame()
+			--this._setExportLastKeyFrame
+			
+			for i = 1 to export_keys.count do 
+			(
+				export_key = export_keys[i]
+				--this._holdMaxState()
+				
+				format "export_key: %\n" export_key
+				this._setTimeSlider (export_key)
+				
+				/*------------------------------------------------------------------------------
+					EXPORT NODE
+				--------------------------------------------------------------------------------*/
+				for selected_node in this.ExportNodePlugins do
+					this._exportNode (selected_node) offset_x:true
+			
+				--this._fetchMaxState()
+			)
 
-			this._fixExportPosition()
-
-			for selected_node in this.ExportNodePlugins do
-				this._exportNode (selected_node)
 
 			this._setSuccessMessage()
 
 			this._openExportedFiles()
 
-			this._fetchMaxState()
+			--this._fetchMaxState()
 
 			this._successMessage()
 
@@ -80,18 +105,6 @@ struct PrintExporter_v
 
 			this._fetchMaxState()
 		)
-	),
-
-	/** Get export file path
-	 */
-	function getExportFilePath ExportNodePlugin =
-	(
-		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
-		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
-
-		export_path =  (this._getExportDir(ExportNodePlugin.export_dir)) + subdir + ExportNodePlugin.name + "." + this.params[#EXPORT_FORMAT]
-
-		( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\\\" -- return
 	),
 
 	/** Open in chitubox
@@ -113,6 +126,30 @@ struct PrintExporter_v
 		DOSCommand ( "start \"\" "  + "\""+ this._getOpenInProgramPath() +"\" " + files_paths_string )
 	),
 
+
+
+	/** Get export file path
+	 */
+	function getExportFilePath ExportNodePlugin =
+	(
+		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
+		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
+
+		filename = ExportNodePlugin.name
+		
+		if params[#ANIMATION] then
+			filename += "-" + (currentTime.frame as integer ) as string
+
+		--format "FILENAME: %\n" filename
+		filename += "." + this.params[#EXPORT_FORMAT]
+		
+		export_path =  (this._getExportDir(ExportNodePlugin.export_dir)) + subdir + filename
+
+
+		( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\\\" -- return
+	),
+
+
 	private
 
 
@@ -121,7 +158,7 @@ struct PrintExporter_v
 		EXPORT NODE
 
 	--------------------------------------------------------------------------------*/
-	function _exportNode ExportNodePlugin =
+	function _exportNode ExportNodePlugin offset_x:false =
 	(
 		format "\n"; print "PrintExporter_v._exportNode()"
 		format "ExportNodePlugin: %\n" ExportNodePlugin
@@ -130,31 +167,59 @@ struct PrintExporter_v
 
 		export_path 	= this.getExportFilePath(ExportNodePlugin)
 		node_children	= ExportNodePlugin.getAllChildren()
-		export_objects	= node_children + this.fix_position_dummy
+		
+		
 		--format "EXPORT_OBJECTS: %\n" export_objects
 
+		select node_children
+		
+		node_children_size = selection.max.x - selection.min.x
+		
+		format "node_children_size: %\n" node_children_size
 		--for obj in export_objects do
 		--format "export_object: %\n" obj
-
-		this._excludeObjects(export_objects)
+		format "this.offset: %\n" this.offset
+		
+		if offset_x then
+			this.offset.x += abs node_children_size
+		
+		
+		
+		this._excludeObjects(node_children)
 		--format "export_objects.count: %\n" export_objects.count
 
 		/* ENABLE MODIFIERS */
-		if this.params[#MESHSMOOTH] then
-            for obj in node_children where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
-                _mod.enabled = true
+		--if this.params[#MESHSMOOTH] then
+            --for obj in node_children where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
+                --_mod.enabled = true
 
 		/* COLLAPSE NODE */
-		collapseStack
+		--collapseStack
 
 
 		/*------------------------------------------------------------------------------
 			EXPORT
 		--------------------------------------------------------------------------------*/
+		--export_result = Exporter.export ( export_objects ) (export_path)
+		
+		export_copies = #()
+		
+		maxOps.CloneNodes node_children expandHierarchy:true newNodes:&export_copies --offset:this.offset
+
+		
+		for obj in export_copies do
+			convertTo obj TriMeshGeometry
+		
+		move export_copies this.offset
+		
+		export_objects	= export_copies + this.fix_position_dummy
+
 		export_result = Exporter.export ( export_objects ) (export_path)
+		
+		
+		delete export_copies
 
-
-		/* APPEND EXPORT PATH TO OTHER PATHS */
+		--/* APPEND EXPORT PATH TO OTHER PATHS */
 		if export_result != false then
 			append this.exported_paths export_path
 	),
@@ -207,8 +272,8 @@ struct PrintExporter_v
 	 */
 	function _openExportedFiles =
 	(
-		--format "\n"; print "PrintExporter_v._openExportedFiles()"
-		--format "this.exported_paths	= % \n" this.exported_paths
+		format "\n"; print "PrintExporter_v._openExportedFiles()"
+		format "this.exported_paths	= % \n" this.exported_paths
 
 		if this.params[#OPEN_IN] > 0 and this.exported_paths.count > 0 then
 		(
@@ -253,18 +318,18 @@ struct PrintExporter_v
 
 
 	/** Move time slider to last key, if export nodes has animated position or rotastion
-	  *
-	  *
-	 */
-	function _setExportKeyFrame =
+		*
+		*
+	    */
+    function _setExportLastKeyFrame =
 	(
-		--format "\n"; print "PrintExporter_v._setExportKeyFrame()"
+		--format "\n"; print "PrintExporter_v._setExportLastKeyFrame()"
 		this.anim_keys[#position]	= this._getLastKeyOfAnimation(#position)
 		this.anim_keys[#rotation]	= this._getLastKeyOfAnimation(#rotation)
 
 		this._setTimeSlider(this._getLastAnimKey())
 	),
-
+	
 	/** Get last anim key
 	 */
 	function _getLastAnimKey =
@@ -284,7 +349,7 @@ struct PrintExporter_v
     function _fixExportPosition =
 	(
 		--format "\n"; print "PrintExporter_v._fixExportPosition()"
-
+		delete this.fix_position_dummy
 		--this.fix_position_dummy = if this.params[#FIX_POSITION] or this.anim_keys[#position] > 0 then
 		this.fix_position_dummy = if this.params[#FIX_POSITION] then
 			(PrinterVolume_v(this.params[#EXPORT_SCALE])).fixPositionionObjects()
@@ -324,13 +389,15 @@ struct PrintExporter_v
 	function _setTimeSlider keyframe =
 	(
 		--format "\n"; print "ExporterSetup_v.setTimeSlider()"
+		sliderTime = keyframe
 
-		current_keyframe	= (( sliderTime ) as string ) as integer
+		
+		--current_keyframe	= (( sliderTime ) as string ) as integer
 
 		/* MOVE TIME SLIDER */
-		if current_keyframe != keyframe then
-			if queryBox ("Exported nodes has animation of rotation.\n\nWould you like to export key "+keyframe as string +" ?" ) title:"Export animation key"  beep:false then
-				sliderTime = keyframe
+		--if current_keyframe != keyframe then
+		--	if queryBox ("Exported nodes has animation of rotation.\n\nWould you like to export key "+keyframe as string +" ?" ) title:"Export animation key"  beep:false then
+		--		sliderTime = keyframe
 	),
 
 

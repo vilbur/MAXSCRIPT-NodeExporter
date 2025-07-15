@@ -44,7 +44,7 @@ startup_scripts = #(
 	( current_dir + "/../MAXSCRIPT-UI-framework/Lib/Dialog/Dialog.ms" ), -- "./../MAXSCRIPT-UI-framework/Lib/Dialog/Dialog.ms"
 	
 	--"/rollout-VIEWPORTS/Lib/ViewportHud/_importHUD.ms", --"./VilTools/rollouts-Tools/rollout-VIEWPORTS/Lib/ViewportHud/_importHUD.ms"
-	
+	"/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms",
 	"" -- last blank item to prevent errors on development
 )
 
@@ -147,8 +147,9 @@ try(
 	format "\n——————————————————— STACK ———————————————————\n%\n"   (getCurrentExceptionCallStack())
 )
 
+refreshyNodeListOnFileOpen()
 
-
+refreshyNodeListOnFileOpenStart()
 
 
 /*------------------------------------------------------------------------------

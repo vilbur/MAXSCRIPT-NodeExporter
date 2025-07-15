@@ -1,7 +1,8 @@
+filein( getFilenamePath(getSourceFileName()) + "/Lib/whenExportNodeSelected/whenExportNodeSelected.ms" )	--"./Lib/whenExportNodeSelected/whenExportNodeSelected.ms"
+
 filein( getFilenamePath(getSourceFileName()) + "/Lib/NodeList/NodeList.ms" )	-- "./Lib/NodeList/NodeList.ms"
 filein( getFilenamePath(getSourceFileName()) + "/Lib/ExportNode/ExportNode.ms" )	-- "./Lib/ExportNode/ExportNode.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/Lib/whenExportNodeSelected/whenExportNodeSelected.ms" )	--"./Lib/whenExportNodeSelected/whenExportNodeSelected.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/Lib/ExporterSetup/ExporterSetup.ms" )	-- "./Lib/ExporterSetup/ExporterSetup.ms"
 
@@ -107,13 +108,9 @@ icon:	"pos:[ 316, 24 ]"
 
 (
 	--format "eventFired	= % \n" eventFired
-	NodeList = NodeList_v(DIALOG_nodeexporter.ML_nodes) 
+	(NodeList_v()).refreshNodeList()
 
-	all_nodes_in_scene = NodeList.loadNodes()
 
-	NodeList.getGroupsOfExportNodes(all_nodes_in_scene)
-	
-	whenExportNodeSelected(all_nodes_in_scene)
 )
 
 
@@ -314,14 +311,14 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 		locked --return 
 	)
 	
+	--filein @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-NodeExporter\NodeExporter\1-[Export-Nodes-Lists].mcr"
 	--filein( getFilenamePath(getSourceFileName()) + "/Lib/LayersVisibility/LayersVisibility.ms" )	--"./Lib/LayersVisibility/LayersVisibility.ms"
 
-	--LayersManager 	= LayersManager_v()
 	LayersVisibility 	= LayersVisibility_v()
 	
 	/* CLOSE LAYER MANAGER BEFORE SELECTION */
-	if LayerManager.isDialogOpen() then
-		is_manager_open = LayerManager.closeDialog()
+	--if LayerManager.isDialogOpen() then
+		--is_manager_open = LayerManager.closeDialog()
 
 	all_children	= #()
 	default_Layer	= LayerManager.getLayerFromName "0"
@@ -344,61 +341,28 @@ icon:	"control:multilistbox|across:2|event:#doubleClicked"
 	--format "\n-----------\nARRAY:selected_nodes:\n";  for selected_node in selected_nodes do format "selected_node:	%\n" selected_node.name
 
 
-	nodes_and_objects = makeUniqueArray (all_children + selected_nodes )
+	nodes_and_children = makeUniqueArray (all_children + selected_nodes )
 	
 	if ( printer_volume = $'PRINT DUMMY VOLUME' ) != undefined then 
-		append nodes_and_objects printer_volume
+		append nodes_and_children printer_volume
 	
-	
-	--nodes_and_objects = makeUniqueArray (all_children + selected_nodes + (LayersManager.getObjectsInLayers(default_Layer)))
-	-- format "nodes_and_objects.count: %\n" nodes_and_objects.count
-	-- format "nodes_and_objects: %\n" nodes_and_objects
 	
 	IsolateSelection.ExitIsolateSelectionMode()
-
-	LayersVisibility.showOnly nodes_and_objects ISOLATE:true
 	
-	select all_children
+	LayersVisibility.showOnly nodes_and_children ISOLATE:true
+	
+	--select all_children
+	clearSelection()
 
 	max tool zoomextents all
 
+	
 	select selected_nodes
 	
-	--layers_of_objects = LayersManager.getLayersByObjects( nodes_and_objects  )
-	--
-	----format "\n-----------\nARRAY:layers_of_objects:\n";  for layer in layers_of_objects do format "layer:	%\n" layer.name
-	--
-	--/* SHOW LAYERS OF NODES CHILDREN */
-	--LayersManager.setVisibility (layers_of_objects) (true)
-	--
-	--/* UNHIDE DEFAULT LAYER - Printer Dummy for 3d print is there */
-	----LayersManager.setVisibility(default_Layer)(true)
-	--
-	--/* SHOW OBLY OBJECTS OF NODES */
-	--for obj in nodes_and_objects do
-	--	obj.isHidden = false
-	--
-	--
-	--clearSelection()
-	--
-	--
-	--
-	--/* ISOLATE NODES AND OBJECTS IF NEEDED */
-	--
-	--not_hidden_other_objects = for obj in objects where obj.isHidden == false and findItem nodes_and_objects obj == 0 collect obj
-	--
-	--if not_hidden_other_objects.count > 0 then
-	--(
-	--	select ( nodes_and_objects )
-	--
-	--	IsolateSelection.EnterIsolateSelectionMode()
-	--)
-	--
-	--select selected_nodes
-	--
-	--/* REOPEN LAYER MANAGER */
+	
+	/* REOPEN LAYER MANAGER */
 	--if is_manager_open != undefined then
-	--	LayerManager.editLayerByName ""
+		--LayerManager.editLayerByName ""
 		
 	/* ENABLE CALLBACK */
 	whenExportNodeSelectedStart()
@@ -430,14 +394,24 @@ icon:	"control:multilistbox|across:2|event:#selectionEnd|height:9|width:160|offs
 	--format "eventFired.Control.selection	= % \n" (eventFired.Control.selection as array )
 
 	selected_groups = #()
+	grouped_nodes = #()
 
 	all_groups = makeUniqueArray( for obj in shapes where classOf obj == ExportNodePlugin and obj.parent != undefined and isGroupHead obj.parent collect  obj.parent)
-
 	group_names_in_selection = for index in eventFired.Control.selection as Array collect eventFired.Control.items[index]
 
 	selected_groups = for _group in all_groups where findItem group_names_in_selection _group.name > 0 collect _group
 
-	select selected_groups
+	for selected_group in selected_groups do 
+		for export_node in selected_group.children \
+			where classOf export_node == ExportNodePlugin do
+				append grouped_nodes export_node
+				
+	--format "grouped_nodes: %\n" grouped_nodes
+	
+	if grouped_nodes.count > 0 then
+		select grouped_nodes
+	else
+		select selected_groups
 )
 
 

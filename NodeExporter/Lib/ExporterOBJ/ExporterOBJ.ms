@@ -31,15 +31,17 @@ struct ExporterOBJ_v
 		--format "export_objects	= % \n" export_objects
 		--format "export_filepath	= % \n" export_filepath
 
-		makeDir (getFilenamePath( export_filepath)) all:true
+		--makeDir (getFilenamePath( export_filepath)) all:true
 
 		select export_objects
 
 		try(
-
+			format "EXPORT_FILEPATH: %\n" export_filepath
+			--export_result = exportFile ( export_filepath ) #noPrompt selectedOnly:true --using:this.Exporter -- return
 			export_result = exportFile ( export_filepath ) #noPrompt selectedOnly:true using:this.Exporter -- return
-			format "export_result	= % \n" export_result
+			--format "export_result	= % \n" export_result
 
+			
 		)catch(
 
 			format "*** % ***\n" (getCurrentException())

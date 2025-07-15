@@ -1,3 +1,4 @@
+filein( getFilenamePath(getSourceFileName()) + "/Callback/refreshNodelistOnFileOpen.ms" )	--"./Callback/refreshNodelistOnFileOpen.ms"
 /** Methods for Lsitbox DIALOG_nodeexporter.ML_nodes
 		
  */
@@ -9,6 +10,18 @@ struct NodeList_v
 	/* properties  */
 	user_prop = "unreal-engine-export-node",
 
+	/** Refresh node list
+	 */
+	function refreshNodeList =
+	(
+		--format "\n"; print "NodeList_v.refreshNodeList()"
+		all_nodes_in_scene = this.loadNodes()
+	
+		this.getGroupsOfExportNodes(all_nodes_in_scene)
+		
+		whenExportNodeSelected(all_nodes_in_scene)
+	),
+	
 	/** Load nodes
 	 */
 	function loadNodes =
@@ -155,5 +168,7 @@ struct NodeList_v
 	(
 		--print "NodeList_v.onCreate()"
 		--format "nodelist_control	= % \n" nodelist_control
+		if nodelist_control == undefined then 
+			this.nodelist_control = DIALOG_nodeexporter.ML_nodes
 	)
 )

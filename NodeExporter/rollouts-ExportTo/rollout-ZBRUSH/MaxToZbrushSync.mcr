@@ -1,4 +1,4 @@
-
+filein( getFilenamePath(getSourceFileName()) + "/Lib/MaxToZbrushSync.ms" )	--"./Lib/MaxToZbrushSync.ms"
 /**
   *
   *
@@ -16,7 +16,9 @@ icon:	"Across:2|width:190|height:48"
 
 	on execute do
 	(
-		filein( getFilenamePath(getSourceFileName()) + "/Lib/MaxToZbrushSync.ms" )	--"./Lib/MaxToZbrushSync.ms"
+		--SEARCH FOR THIS		
+		--filein( getFilenamePath(getSourceFileName()) + "/../scripts/MAXSCRIPT-NodeExporter/NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms" )	--"./../scripts/MAXSCRIPT-NodeExporter/NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms"
+		--filein @"c:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\NodeExporter\rollouts-ExportTo\rollout-ZBRUSH\Lib\MaxToZbrushSync.ms"
 
 		(MaxToZbrushSync_v()).exportObjToZbrush()
 	)
@@ -37,10 +39,12 @@ toolTip:	""
 	/* IMPORT ZBRUSH PLUGIN */
 	on execute do
 	(
-		filein( getFilenamePath(getSourceFileName()) + "/Lib/MaxToZbrushSync.ms" )	--"./Lib/MaxToZbrushSync.ms"
+		--filein( getFilenamePath(getSourceFileName()) + "/../scripts/MAXSCRIPT-NodeExporter/NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms" )	--"./../scripts/MAXSCRIPT-NodeExporter/NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/Lib/MaxToZbrushSync.ms"
+		--filein @"c:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2023 - 64bit\ENU\scripts\MAXSCRIPT-nodeExporter\NodeExporter\rollouts-ExportTo\rollout-ZBRUSH\Lib\MaxToZbrushSync.ms"
 
 		(MaxToZbrushSync_v()).importObjToMax()
 	)
 
 
 )
+

@@ -34,3 +34,15 @@ icon:	"Control:spinner|range:[0,100,1]|offset:[16,0]|across:1|align:#left|width:
 		DIALOG_maxslicer.SPIN_export_size.value = DIALOG_nodeexporter.SPIN_export_size.value
 
 )
+
+/**
+ */
+macroscript	_export_settings_export_animation
+category:	"_Export"
+buttontext:	"EXPORT ANIMATION"
+toolTip:	""
+icon:	"Control:checkbox|ACROSS:1"
+(
+	format "EventFired: %\n" EventFired
+	format "Export size set to % \n" eventFired.val
+)

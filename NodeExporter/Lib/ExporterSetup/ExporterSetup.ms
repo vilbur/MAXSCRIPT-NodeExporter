@@ -89,7 +89,7 @@ struct ExporterSetup_v
 
 		format "\nEXPORTING 3D PRINT\n"
 
-		Exporter =	(PrintExporter_v(this.ExportNodePlugins))
+		Exporter =	(PrintExporter_v(this.ExportNodePlugins)) --"./../../rollouts-ExportTo/rollout-3D-PRINT/Lib/PrintExporter/PrintExporter.ms"
 
 		print_rollout = DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print
 
@@ -104,6 +104,8 @@ struct ExporterSetup_v
 		Exporter.params[#CLOSE_INSTANCES]	= print_rollout.CBX_single_instance.state
 		Exporter.params[#OPEN_IN]	= print_rollout.RB_open_in_program.state
 		Exporter.params[#EXCLUDE]	= print_rollout.ET_exclude.text
+		
+		Exporter.params[#ANIMATION]	= DIALOG_nodeexporter.CBX_export_animation.state
 
 		Exporter.export()
 
