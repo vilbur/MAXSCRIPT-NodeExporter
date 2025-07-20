@@ -19,7 +19,7 @@ struct PrintExporter_v
 
 
 	/* properties */
-	params	= Dictionary #( #EXPORT_FORMAT, "obj" ) #( #EXPORT_SCALE, 1 ) #( #SUBDIR_BY_NODE, false ) #( #FIX_POSITION, false ) #( #OPEN_IN, 0 ) #( #PROJECT_FILE_OPEN, false ) #( #EXCLUDE, "" ) #( #ANIMATION, false )  ,
+	params	= Dictionary #( #EXPORT_FORMAT, "obj" ) #( #EXPORT_SCALE, 1 ) #( #SUBDIR_BY_NODE, false ) #( #FIX_POSITION, false ) #( #OPEN_IN, 0 ) #( #PROJECT_FILE_OPEN, false ) #( #EXCLUDE, "" ) #( #ANIMATION, false ) #( #KEEP_EXPORTED, false )  ,
 
 	open_in_programs = #( #("C:/Program Files/CHITUBOX  V1.9.4/Chitubox.exe", "chitubox"), #("C:/Program Files/LycheeSlicer/LycheeSlicer.exe", "lys")),
 
@@ -35,6 +35,8 @@ struct PrintExporter_v
 	
 	offset = [0,0,0],
 
+	offset_x_gap = 1.0,
+	
 	/* dependency */
 	Exporter,
 
@@ -58,16 +60,24 @@ struct PrintExporter_v
 
 		current_time = currentTime.frame as integer
 		format "current_time: %\n" current_time
+		
+
+		
 		end_time = if params[#ANIMATION] then animationRange.end.frame as integer else current_time
 		format "end_time: %\n" end_time
-		
 		export_keys = for export_key = current_time to end_time collect export_key 
+		
+		if params[#ANIMATION] and not queryBox ("Export animation of keys " + export_keys as string ) title:"EXPORT ANIMATION"  beep:false then
+			 return false
+			 --params[#ANIMATION] = false
+		
 		format "EXPORT_KEYS: %\n" export_keys
 		
 		this._fixExportPosition()
 		
+		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
+		
 		try(
-
 			--this._setExportLastKeyFrame
 			
 			for i = 1 to export_keys.count do 
@@ -82,7 +92,7 @@ struct PrintExporter_v
 					EXPORT NODE
 				--------------------------------------------------------------------------------*/
 				for selected_node in this.ExportNodePlugins do
-					this._exportNode (selected_node) offset_x:true
+					this._exportNode (selected_node) offset_x:(if i == 1 then false else DIALOG_nodeexporter.CBX_offset.state ) frame:i keep_exported:keep_exported
 			
 				--this._fetchMaxState()
 			)
@@ -92,8 +102,10 @@ struct PrintExporter_v
 
 			this._openExportedFiles()
 
-			--this._fetchMaxState()
+			delete this.fix_position_dummy
 
+			this._setTimeSlider (current_time)
+		
 			this._successMessage()
 
 		)catch(
@@ -133,12 +145,16 @@ struct PrintExporter_v
 	function getExportFilePath ExportNodePlugin =
 	(
 		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
+		/** Get frame suffix
+		 */
+		function getFrameSuffix = if ( currentTime_frame = (currentTime.frame as integer ) as string ).count < 2 then "0" + currentTime_frame else currentTime_frame
+
 		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
 
 		filename = ExportNodePlugin.name
 		
 		if params[#ANIMATION] then
-			filename += "-" + (currentTime.frame as integer ) as string
+			filename += "-" + (getFrameSuffix())
 
 		--format "FILENAME: %\n" filename
 		filename += "." + this.params[#EXPORT_FORMAT]
@@ -158,72 +174,89 @@ struct PrintExporter_v
 		EXPORT NODE
 
 	--------------------------------------------------------------------------------*/
-	function _exportNode ExportNodePlugin offset_x:false =
-	(
-		format "\n"; print "PrintExporter_v._exportNode()"
-		format "ExportNodePlugin: %\n" ExportNodePlugin
+	function _exportNode ExportNodePlugin keep_exported:false offset_x:false frame:undefined =
+(
+		--format "\n"; print "PrintExporter_v._exportNode()"
+		--format "ExportNodePlugin: %\n" ExportNodePlugin
 
 		max create mode
 
 		export_path 	= this.getExportFilePath(ExportNodePlugin)
-		node_children	= ExportNodePlugin.getAllChildren()
+		export_objs_source	= ExportNodePlugin.getAllChildren()
 		
 		
 		--format "EXPORT_OBJECTS: %\n" export_objects
 
-		select node_children
+		select export_objs_source
 		
-		node_children_size = selection.max.x - selection.min.x
-		
-		format "node_children_size: %\n" node_children_size
-		--for obj in export_objects do
-		--format "export_object: %\n" obj
-		format "this.offset: %\n" this.offset
+		node_children_size = abs ( selection.max.x - selection.min.x )
 		
 		if offset_x then
-			this.offset.x += abs node_children_size
+			this.offset.x += node_children_size + offset_x_gap
 		
 		
-		
-		this._excludeObjects(node_children)
-		--format "export_objects.count: %\n" export_objects.count
-
 		/* ENABLE MODIFIERS */
-		--if this.params[#MESHSMOOTH] then
-            --for obj in node_children where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
-                --_mod.enabled = true
+		if this.params[#MESHSMOOTH] then
+            for obj in export_objs_source where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
+                _mod.enabled = true
 
-		/* COLLAPSE NODE */
-		--collapseStack
+		export_copies = this._getCopyOfExportObjects(export_objs_source)
 
-
+		export_objects = this._excludeObjects(export_copies)
+		
 		/*------------------------------------------------------------------------------
 			EXPORT
 		--------------------------------------------------------------------------------*/
-		--export_result = Exporter.export ( export_objects ) (export_path)
+		export_result = Exporter.export ( export_objects + this.fix_position_dummy ) (export_path)
 		
-		export_copies = #()
+		/*------------------------------------------------------------------------------
+			DELETE OR RENMA EXPORTED OBJECT 
+		--------------------------------------------------------------------------------*/
+		if keep_exported then
+		(
+			/* RENAME OBJECTS BY EXPORT FILENAME */ 
+			for export_copy in export_copies do 
+				if findItem export_objects export_copy > 0 then
+					export_copy.name = getFilenameFile(export_path)
+					--export_copy.name += "-"+ frame as string
+				else
+					delete export_copy -- delete excluded objects
+		)
+		else
+			delete export_copies
 		
-		maxOps.CloneNodes node_children expandHierarchy:true newNodes:&export_copies --offset:this.offset
-
-		
-		for obj in export_copies do
-			convertTo obj TriMeshGeometry
-		
-		move export_copies this.offset
-		
-		export_objects	= export_copies + this.fix_position_dummy
-
-		export_result = Exporter.export ( export_objects ) (export_path)
-		
-		
-		delete export_copies
 
 		--/* APPEND EXPORT PATH TO OTHER PATHS */
 		if export_result != false then
 			append this.exported_paths export_path
 	),
+	
+	/** Get copy of export objects
+	 */
+	function _getCopyOfExportObjects export_objs =
+	(
+		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
+		export_copies = #()
+		
+		/* CLONE NODES FOR EXPORT */ 
+		maxOps.CloneNodes export_objs expandHierarchy:true newNodes:&export_copies --offset:this.offset
 
+		/* COLLAPSE CLONES */ 
+		for obj in export_copies do
+			convertTo obj PolyMeshObject
+			
+		/* OFFSET FRAME */ 
+		move export_copies this.offset		
+		
+		for i = 1 to export_copies.count do
+		(
+			export_copies[i].parent = undefined
+			
+			export_copies[i].name = export_objs[i].name
+		)		
+		
+		export_copies --return
+	),
 
 	/** Set exporter
 	 */
@@ -431,10 +464,12 @@ struct PrintExporter_v
 
 	/** Exclude obejcts matching name
 	 */
-	function _excludeObjects &export_objects =
+	function _excludeObjects export_objects =
 	(
 		--format "\n"; print "PrintExporter_v.excludeObejcts()"
 
+		export_objects = deepCopy export_objects -- copy to avoid modifyng source array
+		
 		/** Matching name
 		 */
 		function matchingName _string pattern = (( dotNetClass "System.Text.RegularExpressions.RegEx" ).match _string pattern ( dotNetClass "System.Text.RegularExpressions.RegexOptions" ).IgnoreCase ).success

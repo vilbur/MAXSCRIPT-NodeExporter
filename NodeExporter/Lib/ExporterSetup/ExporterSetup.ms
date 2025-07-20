@@ -106,6 +106,7 @@ struct ExporterSetup_v
 		Exporter.params[#EXCLUDE]	= print_rollout.ET_exclude.text
 		
 		Exporter.params[#ANIMATION]	= DIALOG_nodeexporter.CBX_export_animation.state
+		Exporter.params[#KEEP_EXPORTED]	= DIALOG_nodeexporter.CBX_keep_exp.state
 
 		Exporter.export()
 

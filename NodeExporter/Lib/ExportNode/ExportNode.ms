@@ -17,7 +17,7 @@ struct ExportNode_v
 	 */
 	function create =
 	(
-		--print "ExportNode_v.create()"
+		print "ExportNode_v.create()"
 		global ThisExportNode = this
 
 		this._selection = this._getSelection()
@@ -31,13 +31,17 @@ struct ExportNode_v
 	 */
 	function _addToLayer =
 	(
+		/* GET LAYER */ 
 		layer = LayerManager.getLayerFromName layer_name
 
+		/* CREATE LAYER */ 
 		if layer == undefined then
 			layer = LayerManager.newLayerFromName layer_name
 
+		/* ADD NODE */ 
 		layer.addnode _node
 
+		/* SET PROPERTIES */ 
 		layer.on = true
 	),
 
@@ -82,13 +86,16 @@ struct ExportNode_v
 	 */
 	function _createNodeObject _name =
 	(
-		-- format "\n"; print "ExportNode_v._createNodeObject()"
+		 format "\n"; print "ExportNode_v._createNodeObject()"
 		this._name = _name
 			-- format "classOf ExportNode: %\n" (classOf ExportNode)
 
-		--format "node_exists	= % \n" node_exists
+		format "NODE_EXISTS	= % \n" (this._getNodeByName(_name))
 		if( this._getNodeByName(_name) == undefined ) then
 		(
+			/*------------------------------------------------------------------------------
+				CREATE NODE
+			--------------------------------------------------------------------------------*/
 			this._node = ExportNodePlugin name:_name text:_name export_dir:(this._getExportDir()) size:(this._getNodeSize()) isSelected:on pos:(this._getNewNodePosition())
 
 			this._addToLayer()
@@ -141,7 +148,7 @@ struct ExportNode_v
 	function _getNodeByName node_name =
 	(
 		--format "\n"; print "ExportNode_v._getNodesInScene()"
-		for obj in shapes where classOf obj == ExportNodePlugin and obj.name == node_name do return obj
+		for obj in shapes where classOf obj == ExportNodePlugin and isValidNode obj  and obj.name == node_name do return obj
 
 		undefined --return
 	),

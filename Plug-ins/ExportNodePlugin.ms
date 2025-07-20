@@ -9,7 +9,9 @@ category:	"Splines"
 replaceUI:	true
 (
 	/*------------------------------------------------------------------------------
+	  
 		METHODS
+		
 	--------------------------------------------------------------------------------*/
 
 	/** Get animation keys of node
@@ -212,7 +214,7 @@ replaceUI:	true
 
 	on create do
 	(
-  		--format "\n"; print ".onCreate()"
+  		--format "\n"; print "ExportNodePlugin.onCreate()"
 		Delegate.size = this.size
 		--this._getNodeObejct() --return
 		this -- return
