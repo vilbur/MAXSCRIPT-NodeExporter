@@ -3,6 +3,8 @@
 <project id="640e1e37-f762-488e-ae28-11c19c36e314" kpf_version="5" name="MS-NodeExporter.komodoproject">
 <livefolder id="0016e747-21a4-409f-88a6-84641d1babbd" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="rollout-ZBRUSH" url="NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/">
 </livefolder>
+<file id="1becf992-b6f4-4df6-9c3c-94df86bb64a8" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="3-Export-Options.mcr" url="NodeExporter/3-Export-Options.mcr">
+</file>
 <livefolder id="3cd47489-125a-4f62-88ef-1f46242ac20e" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="NodeExporter" url="NodeExporter/">
 </livefolder>
 <livefolder id="44ac6f5c-e87c-41ee-a5bc-89c270974383" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="rollout-OBJ" url="NodeExporter/rollouts-ExportTo/rollout-OBJ/">

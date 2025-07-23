@@ -200,9 +200,17 @@ struct PrintExporter_v
             for obj in export_objs_source where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
                 _mod.enabled = true
 
+		/*------------------------------------------------------------------------------
+			COPY OBJECTS TO EXPORT
+		--------------------------------------------------------------------------------*/		
+				
 		export_copies = this._getCopyOfExportObjects(export_objs_source)
 
 		export_objects = this._excludeObjects(export_copies)
+		
+		
+		if this.params[#UNSMOOTH_VERTEX_COLOR] then
+			this._collapseSmoothAndUnsmoothVertexColor(export_objects)
 		
 		/*------------------------------------------------------------------------------
 			EXPORT
@@ -215,12 +223,24 @@ struct PrintExporter_v
 		if keep_exported then
 		(
 			/* RENAME OBJECTS BY EXPORT FILENAME */ 
-			for export_copy in export_copies do 
+			--for export_copy in export_copies do
+			for i = 1 to export_copies.count do
+			(
+				export_copy = export_copies[i]
+				
 				if findItem export_objects export_copy > 0 then
+				(
+					/* RENAME OBJECT */ 
 					export_copy.name = getFilenameFile(export_path)
-					--export_copy.name += "-"+ frame as string
+					
+					/* COPY VERTEX COLOR */ 
+					if this.params[#UNSMOOTH_VERTEX_COLOR] then
+						copyVertexColors export_objects[i] export_copy
+					
+				)
 				else
 					delete export_copy -- delete excluded objects
+			)
 		)
 		else
 			delete export_copies
@@ -256,6 +276,23 @@ struct PrintExporter_v
 		)		
 		
 		export_copies --return
+	),
+	
+	/** Collapse smooth and unsmooth vertex color
+	 */
+	function _collapseSmoothAndUnsmoothVertexColor export_objects =
+	(
+		--format "\n"; print "PrintExporter_v._collapseSmoothAndUnsmoothVertexColor()"
+		for obj in export_objects do
+		(
+			msmooth_found = false
+			
+			for i = 1 to obj.modifiers.count while not msmooth_found where classOf obj.modifiers[i] == meshsmooth do
+				msmooth_found = true
+			
+			if msmooth_found then
+				smoothAndKeepVertexColors( obj )
+		)
 	),
 
 	/** Set exporter

@@ -105,8 +105,10 @@ struct ExporterSetup_v
 		Exporter.params[#OPEN_IN]	= print_rollout.RB_open_in_program.state
 		Exporter.params[#EXCLUDE]	= print_rollout.ET_exclude.text
 		
-		Exporter.params[#ANIMATION]	= DIALOG_nodeexporter.CBX_export_animation.state
-		Exporter.params[#KEEP_EXPORTED]	= DIALOG_nodeexporter.CBX_keep_exp.state
+		
+		Exporter.params[#ANIMATION]	= ROLLOUT_3d_print.CBX_export_animation.state
+		Exporter.params[#KEEP_EXPORTED]	= ROLLOUT_3d_print.CBX_keep_exp.state
+		Exporter.params[#UNSMOOTH_VERTEX_COLOR]	= ROLLOUT_3d_print.CBX_unsmooth_vertex_color.state
 
 		Exporter.export()
 
