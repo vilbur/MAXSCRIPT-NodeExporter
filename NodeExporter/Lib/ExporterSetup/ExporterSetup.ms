@@ -108,6 +108,7 @@ struct ExporterSetup_v
 		
 		Exporter.params[#ANIMATION]	= ROLLOUT_3d_print.CBX_export_animation.state
 		Exporter.params[#KEEP_EXPORTED]	= ROLLOUT_3d_print.CBX_keep_exp.state
+		Exporter.params[#OFFSET]	= ROLLOUT_3d_print.CBX_offset.state
 		Exporter.params[#UNSMOOTH_VERTEX_COLOR]	= ROLLOUT_3d_print.CBX_unsmooth_vertex_color.state
 
 		Exporter.export()

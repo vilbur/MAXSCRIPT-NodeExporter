@@ -1,5 +1,4 @@
-filein( getFilenamePath(getSourceFileName()) + "/../PrinterVolume/PrinterVolume.ms" )	-- "./../PrinterVolume/PrinterVolume.ms"
-
+s
 
 /** Print exporter
   *
@@ -19,7 +18,17 @@ struct PrintExporter_v
 
 
 	/* properties */
-	params	= Dictionary #( #EXPORT_FORMAT, "obj" ) #( #EXPORT_SCALE, 1 ) #( #SUBDIR_BY_NODE, false ) #( #FIX_POSITION, false ) #( #OPEN_IN, 0 ) #( #PROJECT_FILE_OPEN, false ) #( #EXCLUDE, "" ) #( #ANIMATION, false ) #( #KEEP_EXPORTED, false )  ,
+	params	= Dictionary #( #EXPORT_FORMAT, "obj" )\
+					 #( #EXPORT_SCALE, 1 )\
+					 #( #SUBDIR_BY_NODE, false )\
+					 #( #FIX_POSITION, false )\
+					 #( #OPEN_IN, 0 )\
+					 #( #PROJECT_FILE_OPEN, false )\
+					 #( #EXCLUDE, "" )\
+					 #( #ANIMATION, false )\
+					 #( #UNSMOOTH_VERTEX_COLOR, false )\
+					 #( #KEEP_EXPORTED, false ) \
+					 #( #OFFSET, false ),
 
 	open_in_programs = #( #("C:/Program Files/CHITUBOX  V1.9.4/Chitubox.exe", "chitubox"), #("C:/Program Files/LycheeSlicer/LycheeSlicer.exe", "lys")),
 
@@ -28,6 +37,8 @@ struct PrintExporter_v
 	anim_keys	= Dictionary #( #position, 0 ) #( #rotation, 0 ),
 
 	fetch_state	= Dictionary #( #layer_manager_open, true ),
+	
+	vertex_colors_source	= Dictionary #STRING,
 
 	fix_position_dummy = #(),
 
@@ -78,8 +89,13 @@ struct PrintExporter_v
 		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
 		
 		try(
-			--this._setExportLastKeyFrame
+			if params[#KEEP_EXPORTED] and this.params[#UNSMOOTH_VERTEX_COLOR] then
+				for selected_node in this.ExportNodePlugins do
+					this._saveVertexColors (selected_node)
 			
+			
+			
+			--this._setExportLastKeyFrame
 			for i = 1 to export_keys.count do 
 			(
 				export_key = export_keys[i]
@@ -92,7 +108,7 @@ struct PrintExporter_v
 					EXPORT NODE
 				--------------------------------------------------------------------------------*/
 				for selected_node in this.ExportNodePlugins do
-					this._exportNode (selected_node) offset_x:(if i == 1 then false else DIALOG_nodeexporter.CBX_offset.state ) frame:i keep_exported:keep_exported
+					this._exportNode (selected_node) offset_x:(if i == 1 then false else this.params[#OFFSET] ) frame:i keep_exported:keep_exported
 			
 				--this._fetchMaxState()
 			)
@@ -175,19 +191,20 @@ struct PrintExporter_v
 
 	--------------------------------------------------------------------------------*/
 	function _exportNode ExportNodePlugin keep_exported:false offset_x:false frame:undefined =
-(
-		--format "\n"; print "PrintExporter_v._exportNode()"
+    (
+        format "\n"; print "PrintExporter_v._exportNode()"
+		format "this.params[#UNSMOOTH_VERTEX_COLOR]: %\n" this.params[#UNSMOOTH_VERTEX_COLOR]
 		--format "ExportNodePlugin: %\n" ExportNodePlugin
 
 		max create mode
 
 		export_path 	= this.getExportFilePath(ExportNodePlugin)
-		export_objs_source	= ExportNodePlugin.getAllChildren()
+		export_source_all	= ExportNodePlugin.getAllChildren()
 		
 		
 		--format "EXPORT_OBJECTS: %\n" export_objects
 
-		select export_objs_source
+		select export_source_all
 		
 		node_children_size = abs ( selection.max.x - selection.min.x )
 		
@@ -197,45 +214,55 @@ struct PrintExporter_v
 		
 		/* ENABLE MODIFIERS */
 		if this.params[#MESHSMOOTH] then
-            for obj in export_objs_source where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
+            for obj in export_source_all where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
                 _mod.enabled = true
 
 		/*------------------------------------------------------------------------------
 			COPY OBJECTS TO EXPORT
 		--------------------------------------------------------------------------------*/		
 				
-		export_copies = this._getCopyOfExportObjects(export_objs_source)
-
+		export_sources = this._excludeObjects(export_source_all)
+		
+		export_copies = this._getCopyOfExportObjects(export_source_all)
+		
 		export_objects = this._excludeObjects(export_copies)
-		
-		
-		if this.params[#UNSMOOTH_VERTEX_COLOR] then
-			this._collapseSmoothAndUnsmoothVertexColor(export_objects)
-		
+
 		/*------------------------------------------------------------------------------
 			EXPORT
 		--------------------------------------------------------------------------------*/
 		export_result = Exporter.export ( export_objects + this.fix_position_dummy ) (export_path)
 		
 		/*------------------------------------------------------------------------------
-			DELETE OR RENMA EXPORTED OBJECT 
+			DELETE OR RENAME EXPORTED OBJECT 
 		--------------------------------------------------------------------------------*/
 		if keep_exported then
 		(
+			format "EXPORT_SOURCES.COUNT: %\n" export_sources.count
+
 			/* RENAME OBJECTS BY EXPORT FILENAME */ 
-			--for export_copy in export_copies do
-			for i = 1 to export_copies.count do
+			for i = 1 to export_sources.count do
 			(
-				export_copy = export_copies[i]
+				export_source = export_sources[i]
+				--format "export_source: %\n" export_source
+				export_copy   = export_objects[i]
 				
 				if findItem export_objects export_copy > 0 then
 				(
+					convertTo export_objects[i] PolyMeshObject
+					
 					/* RENAME OBJECT */ 
 					export_copy.name = getFilenameFile(export_path)
 					
 					/* COPY VERTEX COLOR */ 
 					if this.params[#UNSMOOTH_VERTEX_COLOR] then
-						copyVertexColors export_objects[i] export_copy
+					(
+						pointer = getHandleByAnim export_source
+						
+						verts_by_colors = vertex_colors_source[ pointer as string ]
+
+						for vertex_color in verts_by_colors.keys do
+							polyop.setVertColor export_copy.baseobject 0 verts_by_colors[vertex_color]  ( execute vertex_color )
+					)
 					
 				)
 				else
@@ -251,20 +278,50 @@ struct PrintExporter_v
 			append this.exported_paths export_path
 	),
 	
+	/** Save vertex colors
+	 */
+	function _saveVertexColors ExportNodePlugin =
+	(
+		--format "\n"; print "PrintExporter_v._saveVertexColors()"
+		--export_sources_get_colors = #()
+		
+		export_source_all	= ExportNodePlugin.getAllChildren()
+		
+		export_sources = this._excludeObjects(export_source_all)
+		
+		maxOps.CloneNodes export_sources expandHierarchy:true newNodes:&export_sources_get_colors
+
+		--for export_source_get_colors in export_sources_get_colors do
+		for i = 1 to export_sources.count do
+		(
+			get_color = export_sources_get_colors[i]
+			get_color.name = "get_color"
+
+			pointer = getHandleByAnim export_sources[i]
+			
+			/* COLLAPSE SMOOTH */ 
+			verts_by_colors_wtf = smoothAndKeepVertexColors get_color
+
+			vertex_colors_source[ pointer as string ] = verts_by_colors_wtf
+		)
+
+		delete export_sources_get_colors
+	),
+	
 	/** Get copy of export objects
 	 */
-	function _getCopyOfExportObjects export_objs =
+	function _getCopyOfExportObjects export_source =
 	(
 		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
-		export_copies = #()
+		--export_copies = #()
 		
 		/* CLONE NODES FOR EXPORT */ 
-		maxOps.CloneNodes export_objs expandHierarchy:true newNodes:&export_copies --offset:this.offset
-
+		maxOps.CloneNodes export_source expandHierarchy:true newNodes:&export_copies --offset:this.offset
+		
 		/* COLLAPSE CLONES */ 
 		for obj in export_copies do
 			convertTo obj PolyMeshObject
-			
+
 		/* OFFSET FRAME */ 
 		move export_copies this.offset		
 		
@@ -272,29 +329,13 @@ struct PrintExporter_v
 		(
 			export_copies[i].parent = undefined
 			
-			export_copies[i].name = export_objs[i].name
+			export_copies[i].name = export_source[i].name + "-EXPORTING"
+			--export_copies[i].name = "export_copy"
 		)		
 		
 		export_copies --return
 	),
 	
-	/** Collapse smooth and unsmooth vertex color
-	 */
-	function _collapseSmoothAndUnsmoothVertexColor export_objects =
-	(
-		--format "\n"; print "PrintExporter_v._collapseSmoothAndUnsmoothVertexColor()"
-		for obj in export_objects do
-		(
-			msmooth_found = false
-			
-			for i = 1 to obj.modifiers.count while not msmooth_found where classOf obj.modifiers[i] == meshsmooth do
-				msmooth_found = true
-			
-			if msmooth_found then
-				smoothAndKeepVertexColors( obj )
-		)
-	),
-
 	/** Set exporter
 	 */
 	function _setExporterOptions =
@@ -541,7 +582,7 @@ struct PrintExporter_v
 
 		--print ("\n\n------------------------- EXPORT SUCCESFULL -------------------------\n\n" + success_message)
 
-		format "\n\n----- EXPORTED FILES: -----	% \n" success_message
+		format "\n\n----- EXPORTED FILES: -----\n%\n\n" success_message
 		--messageBox success_message title:"EXPORT SUCCESFULL"  beep:false
 		format "\nEXPORT SUCCESFULL"
 
