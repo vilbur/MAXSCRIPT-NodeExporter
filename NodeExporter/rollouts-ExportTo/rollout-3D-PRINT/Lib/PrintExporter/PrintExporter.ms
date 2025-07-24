@@ -64,8 +64,8 @@ struct PrintExporter_v
 		format "\n"; print "PrintExporter_v.export()"
 		format "\n-----------\nDICTIONARY:params:%\n" params; for data_pair in params do format "%:	%\n" data_pair.key data_pair.value
 
-		--if LayerManager.isDialogOpen() then
-		--	LayerManager.closeDialog()
+		if LayerManager.isDialogOpen() then
+			LayerManager.closeDialog()
 
 		this._setExporterOptions()
 
@@ -229,7 +229,7 @@ struct PrintExporter_v
 		export_copies = this._getCopyOfExportObjects(export_source_all)
 		
 		export_objects = this._excludeObjects(export_copies)
-
+		
 		/*------------------------------------------------------------------------------
 			EXPORT
 		--------------------------------------------------------------------------------*/
@@ -248,14 +248,15 @@ struct PrintExporter_v
 				export_source = export_sources[i]
 				--format "export_source: %\n" export_source
 				export_copy   = export_objects[i]
-				
+
 				if findItem export_objects export_copy > 0 then
 				(
 					convertTo export_objects[i] PolyMeshObject
 					
+					basename = getFilenameFile(export_path)
 					
 					/* RENAME OBJECT */ 
-					export_copy.name = basename = getFilenameFile(export_path)
+					export_copy.name = basename
 					
 					if params[#EXPORTED_SUFFIX] != "" then
 						export_copy.name += "-" + params[#EXPORTED_SUFFIX]
