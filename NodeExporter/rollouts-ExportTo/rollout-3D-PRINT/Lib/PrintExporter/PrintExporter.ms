@@ -28,6 +28,8 @@ struct PrintExporter_v
 					 #( #ANIMATION, false )\
 					 #( #UNSMOOTH_VERTEX_COLOR, false )\
 					 #( #KEEP_EXPORTED, false ) \
+					 #( #LAYER_BY_OBJ, false ) \
+					 #( #EXPORTED_SUFFIX, "" ) \
 					 #( #OFFSET, false ),
 
 	open_in_programs = #( #("C:/Program Files/CHITUBOX  V1.9.4/Chitubox.exe", "chitubox"), #("C:/Program Files/LycheeSlicer/LycheeSlicer.exe", "lys")),
@@ -89,6 +91,7 @@ struct PrintExporter_v
 		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
 		
 		try(
+			
 			if params[#KEEP_EXPORTED] and this.params[#UNSMOOTH_VERTEX_COLOR] then
 				for selected_node in this.ExportNodePlugins do
 					this._saveVertexColors (selected_node)
@@ -250,8 +253,30 @@ struct PrintExporter_v
 				(
 					convertTo export_objects[i] PolyMeshObject
 					
+					
 					/* RENAME OBJECT */ 
-					export_copy.name = getFilenameFile(export_path)
+					export_copy.name = basename = getFilenameFile(export_path)
+					
+					if params[#EXPORTED_SUFFIX] != "" then
+						export_copy.name += "-" + params[#EXPORTED_SUFFIX]
+					
+					if params[#LAYER_BY_OBJ] then
+					(
+						layer_by_obj = LayerManager.getLayerFromName basename
+						format "layer_by_obj: %\n" layer_by_obj
+						
+						if layer_by_obj == undefined then
+						(
+							LayerManager.newLayerFromName basename
+								
+							layer_by_obj = LayerManager.getLayerFromName basename
+							
+							layer_by_obj.setParent export_source.layer
+						)
+						
+						layer_by_obj.addNode export_copy
+					)
+					
 					
 					/* COPY VERTEX COLOR */ 
 					if this.params[#UNSMOOTH_VERTEX_COLOR] then
@@ -259,7 +284,7 @@ struct PrintExporter_v
 						pointer = getHandleByAnim export_source
 						
 						verts_by_colors = vertex_colors_source[ pointer as string ]
-
+			
 						for vertex_color in verts_by_colors.keys do
 							polyop.setVertColor export_copy.baseobject 0 verts_by_colors[vertex_color]  ( execute vertex_color )
 					)

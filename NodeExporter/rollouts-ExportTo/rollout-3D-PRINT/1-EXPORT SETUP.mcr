@@ -34,38 +34,6 @@ icon:	"control:checkbox|across:2|offset:[ 0, 0 ]"
 	--(PrinterVolume_v()).createVolume(#box)(EXPORT_SIZE)
 )
 
-/*==============================================================================
-	ROW
-================================================================================*/
-
-
-/**
- */
-macroscript	_export_settings_export_animation_keep_exported_objects
-category:	"_Export"
-buttontext:	"KEEP EXP"
-toolTip:	"Keep exported exported obejcts"
-icon:	"Control:checkbox|offset:[ 16, 0 ]"
-(
-	--format "EventFired: %\n" EventFired
-	--format "Export size set to % \n" eventFired.val
-	on execute do
-		ROLLOUT_3d_print.CBX_unsmooth_vertex_color.enabled = eventFired.val
-
-)
-
-/**
- */
-macroscript	_export_settings_export_animation_unsmooth_vertex_color
-category:	"_Export"
-buttontext:	"Unsmooth Vertex Color"
-toolTip:	"DO NOT SMOOTH VERTEX COLORS"
-icon:	"Control:checkbox|offset:[  0, 0]"
-(
-	format "EventFired: %\n" EventFired
-	format "Export size set to % \n" eventFired.val
-	
-)
 
 /*==============================================================================
 	ROW
@@ -92,6 +60,10 @@ icon:	"Control:checkbox|id:CBX_export_animation|ACROSS:2|offset:[ 16, 0 ]"
 	
 )
 
+/*==============================================================================
+	ROW
+================================================================================*/
+
 /**
  */
 macroscript	_export_settings_export_animation_offset
@@ -103,6 +75,4 @@ icon:	"Control:checkbox|offset:[ 0, 0]"
 	format "EventFired: %\n" EventFired
 	format "Export size set to % \n" eventFired.val
 )
-
-
 
