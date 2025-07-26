@@ -1,4 +1,6 @@
-s
+--filein( getFilenamePath(getSourceFileName()) + "/../PrinterVolume/PrinterVolume.ms" )	-- "./../PrinterVolume/PrinterVolume.ms"
+
+filein( getFilenamePath(getSourceFileName()) + "/PrintPostExporter/PrintPostExporter.ms" )	--"./PrintPostExporter/PrintPostExporter.ms"
 
 /** Print exporter
   *
@@ -14,7 +16,7 @@ s
 struct PrintExporter_v
 (
 	/* construct */
-	ExportNodePlugins,
+	ExportNodesToExport,
 
 
 	/* properties */
@@ -52,6 +54,7 @@ struct PrintExporter_v
 	
 	/* dependency */
 	Exporter,
+	PrintPostExporter,
 
 	/* reference */
 	/* inhered */
@@ -67,7 +70,7 @@ struct PrintExporter_v
 		if LayerManager.isDialogOpen() then
 			LayerManager.closeDialog()
 
-		this._setExporterOptions()
+		this._setExporter()
 
 		this._holdMaxState()
 
@@ -93,7 +96,7 @@ struct PrintExporter_v
 		try(
 			
 			if params[#KEEP_EXPORTED] and this.params[#UNSMOOTH_VERTEX_COLOR] then
-				for selected_node in this.ExportNodePlugins do
+				for selected_node in this.ExportNodesToExport do
 					this._saveVertexColors (selected_node)
 			
 			
@@ -110,7 +113,7 @@ struct PrintExporter_v
 				/*------------------------------------------------------------------------------
 					EXPORT NODE
 				--------------------------------------------------------------------------------*/
-				for selected_node in this.ExportNodePlugins do
+				for selected_node in this.ExportNodesToExport do
 					this._exportNode (selected_node) offset_x:(if i == 1 then false else this.params[#OFFSET] ) frame:i keep_exported:keep_exported
 			
 				--this._fetchMaxState()
@@ -202,12 +205,12 @@ struct PrintExporter_v
 		max create mode
 
 		export_path 	= this.getExportFilePath(ExportNodePlugin)
-		export_source_all	= ExportNodePlugin.getAllChildren()
+		export_node_children	= ExportNodePlugin.getAllChildren()
 		
 		
 		--format "EXPORT_OBJECTS: %\n" export_objects
 
-		select export_source_all
+		select export_node_children
 		
 		node_children_size = abs ( selection.max.x - selection.min.x )
 		
@@ -217,83 +220,60 @@ struct PrintExporter_v
 		
 		/* ENABLE MODIFIERS */
 		if this.params[#MESHSMOOTH] then
-            for obj in export_source_all where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
+            for obj in export_node_children where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
                 _mod.enabled = true
 
 		/*------------------------------------------------------------------------------
 			COPY OBJECTS TO EXPORT
 		--------------------------------------------------------------------------------*/		
-				
-		export_sources = this._excludeObjects(export_source_all)
 		
-		export_copies = this._getCopyOfExportObjects(export_source_all)
+		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
+		export_copies = this._getCopyOfExportObjects(export_node_children)
 		
-		export_objects = this._excludeObjects(export_copies)
+		
+		/* GET SOURCE OBJECTS OF EXPORTED OBJECTS */ 
+		source_objects = this._excludeObjects(export_node_children)
+		
+		/* TRULLY EXPORTED OBJECTS */ 
+		exported_objects = this._excludeObjects(export_copies)
 		
 		/*------------------------------------------------------------------------------
 			EXPORT
 		--------------------------------------------------------------------------------*/
-		export_result = Exporter.export ( export_objects + this.fix_position_dummy ) (export_path)
+		export_result = Exporter.export ( exported_objects + this.fix_position_dummy ) (export_path)
 		
 		/*------------------------------------------------------------------------------
 			DELETE OR RENAME EXPORTED OBJECT 
 		--------------------------------------------------------------------------------*/
 		if keep_exported then
 		(
-			format "EXPORT_SOURCES.COUNT: %\n" export_sources.count
-
-			/* RENAME OBJECTS BY EXPORT FILENAME */ 
-			for i = 1 to export_sources.count do
-			(
-				export_source = export_sources[i]
-				--format "export_source: %\n" export_source
-				export_copy   = export_objects[i]
-
-				if findItem export_objects export_copy > 0 then
-				(
-					convertTo export_objects[i] PolyMeshObject
-					
-					basename = getFilenameFile(export_path)
-					
-					/* RENAME OBJECT */ 
-					export_copy.name = basename
-					
-					if params[#EXPORTED_SUFFIX] != "" then
-						export_copy.name += "-" + params[#EXPORTED_SUFFIX]
-					
-					if params[#LAYER_BY_OBJ] then
-					(
-						layer_by_obj = LayerManager.getLayerFromName basename
-						format "layer_by_obj: %\n" layer_by_obj
-						
-						if layer_by_obj == undefined then
-						(
-							LayerManager.newLayerFromName basename
-								
-							layer_by_obj = LayerManager.getLayerFromName basename
-							
-							layer_by_obj.setParent export_source.layer
-						)
-						
-						layer_by_obj.addNode export_copy
-					)
-					
-					
-					/* COPY VERTEX COLOR */ 
-					if this.params[#UNSMOOTH_VERTEX_COLOR] then
-					(
-						pointer = getHandleByAnim export_source
-						
-						verts_by_colors = vertex_colors_source[ pointer as string ]
+			format "EXPORT_SOURCES.COUNT: %\n" source_objects.count
 			
-						for vertex_color in verts_by_colors.keys do
-							polyop.setVertColor export_copy.baseobject 0 verts_by_colors[vertex_color]  ( execute vertex_color )
-					)
-					
-				)
-				else
-					delete export_copy -- delete excluded objects
+			/* RENAME OBJECTS BY EXPORT FILENAME */ 
+			for i = 1 to source_objects.count do
+			(
+				convertTo exported_objects[i] PolyMeshObject
+				
+				PrintPostExporter = PrintPostExporter_v(source_objects[i])(exported_objects[i])
+		
+				/* RENAME EXPORTED COPY */ 
+				PrintPostExporter.renameObjects(getFilenameFile(export_path))(params[#EXPORTED_SUFFIX])
+			
+				/* ADD TO LAYER */ 
+				if params[#LAYER_BY_OBJ] then
+					PrintPostExporter.moveToLayer()
+				
+				
+				/* COPY VERTEX COLOR */ 
+				if this.params[#UNSMOOTH_VERTEX_COLOR] then
+					PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
+				
 			)
+					
+			/* DELETE EXCLUDED OBJECTS */ 
+			for i = 1 to export_copies.count where findItem exported_objects export_copies[i] == 0 do
+				delete export_copies[i]
+					
 		)
 		else
 			delete export_copies
@@ -311,19 +291,19 @@ struct PrintExporter_v
 		--format "\n"; print "PrintExporter_v._saveVertexColors()"
 		--export_sources_get_colors = #()
 		
-		export_source_all	= ExportNodePlugin.getAllChildren()
+		export_node_children = ExportNodePlugin.getAllChildren()
 		
-		export_sources = this._excludeObjects(export_source_all)
+		source_objects = this._excludeObjects(export_node_children)
 		
-		maxOps.CloneNodes export_sources expandHierarchy:true newNodes:&export_sources_get_colors
+		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_sources_get_colors
 
 		--for export_source_get_colors in export_sources_get_colors do
-		for i = 1 to export_sources.count do
+		for i = 1 to source_objects.count do
 		(
 			get_color = export_sources_get_colors[i]
 			get_color.name = "get_color"
 
-			pointer = getHandleByAnim export_sources[i]
+			pointer = getHandleByAnim source_objects[i]
 			
 			/* COLLAPSE SMOOTH */ 
 			verts_by_colors_wtf = smoothAndKeepVertexColors get_color
@@ -364,18 +344,18 @@ struct PrintExporter_v
 	
 	/** Set exporter
 	 */
-	function _setExporterOptions =
+	function _setExporter =
 	(
 		--format "\n"; prOptionsint "PrintExporter_v._setExporter()"
-		Exporter = case this.params[#EXPORT_FORMAT] of
+		this.Exporter = case this.params[#EXPORT_FORMAT] of
 		(
 			"obj":  ExporterOBJ_v(#Print)
 			"stl":	ExporterSTL_v()
 		)
 
-		Exporter.setPresetFile("print")
+		this.Exporter.setPresetFile("print")
 
-		Exporter.setExportScale(this.params[#EXPORT_SCALE])
+		this.Exporter.setExportScale(this.params[#EXPORT_SCALE])
 	),
 
 
@@ -437,13 +417,13 @@ struct PrintExporter_v
 
 		if this.params[#PROJECT_FILE_OPEN] then
 		(
-			node_groups = makeUniqueArray( for _node in this.ExportNodePlugins where _node.parent != undefined and isGroupHead _node.parent collect _node.parent)
+			node_groups = makeUniqueArray( for _node in this.ExportNodesToExport where _node.parent != undefined and isGroupHead _node.parent collect _node.parent)
 
 			if node_groups.count > 0 then
 			(
 				extension = this.open_in_programs[this.params[#OPEN_IN]][2]
 
-				final_file = (this._getExportDir(this.ExportNodePlugins[1].export_dir)) + "\\" + node_groups[1].name + "." + extension
+				final_file = (this._getExportDir(this.ExportNodesToExport[1].export_dir)) + "\\" + node_groups[1].name + "." + extension
 
 				if not doesFileExist final_file then
 					copyFile  ( getFilenamePath(getSourceFileName()) + "..\\..\\Final-Files-Templates\\template." + extension ) final_file -- COPY EMPTY FILE "./../../Final-Files-Templates/template.chitubox"
@@ -505,7 +485,7 @@ struct PrintExporter_v
 		--format "\n"; print "ExporterSetup_v._getLastKeyOfRotateAnimation()"
 		last_keyframe 	= 0
 
-		for ExportNodePlugin in this.ExportNodePlugins where (node_anim_keys = ExportNodePlugin.getAnimationKeys(controller_type) ).count > 0 do
+		for ExportNodePlugin in this.ExportNodesToExport where (node_anim_keys = ExportNodePlugin.getAnimationKeys(controller_type) ).count > 0 do
 			if node_anim_keys[node_anim_keys.count] > last_keyframe then  -- get last key if higher
 				last_keyframe = node_anim_keys[node_anim_keys.count]
 
