@@ -26,16 +26,19 @@ macroscript	_export_print_open_in_program
 category:	"_Export"
 buttontext:	"Open In Program"
 toolTip:	"Open export file in chitubox after export"
-icon:	"control:radiobuttons|unselect:false|across:2|items:#('Chitubox', 'LycheSlicer')|columns:2|offset:[ -32, 0 ]|offsets:#([0,4], [0,4])"
+icon:	"control:radiobuttons|unselect:true|across:2|items:#('Chitubox', 'LycheSlicer')|columns:2|offset:[ -32, 0 ]|offsets:#([0,4], [0,4])"
 (
 	--export_dir = execute ("@"+ "\""+EventFired.Roll.export_dir.text +"\"")
-
-	--DosCommand ("explorer \""+export_dir+"\"")
-	format "EventFired	= % \n" EventFired
-
-	/* SET EXPORT FORMAT TO STL IF LycheSlicer is used (LycheSlicer import holes in *.obj files ) */
-	if EventFired.val == 2 then
-		DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_export_format.state = 2
+	on execute do
+	(
+		--DosCommand ("explorer \""+export_dir+"\"")
+		--format "EventFired	= % \n" EventFired
+	
+		/* SET EXPORT FORMAT TO STL IF LycheSlicer is used (LycheSlicer import holes in *.obj files ) */
+		--if EventFired.val == 2 then
+		DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_export_format.state = EventFired.val
+		
+	)
 )
 
 /*------------------------------------------------------------------------------

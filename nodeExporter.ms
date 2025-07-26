@@ -154,6 +154,9 @@ refreshyNodeListOnFileOpen()
 
 refreshyNodeListOnFileOpenStart()
 
+/* NEABOE\DISABLE controls which depends pne to other */ 
+macros.run "_Export" "_export_settings_export_animation_keep_exported_objects"
+
 
 /*------------------------------------------------------------------------------
 
