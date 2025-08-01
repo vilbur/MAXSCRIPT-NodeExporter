@@ -407,21 +407,18 @@ struct PrintExporter_v
 	function _saveVertexColors ExportNodePlugin =
 	(
 		--format "\n"; print "PrintExporter_v._saveVertexColors()"
-		--export_clones = #()
+		--export_sources_get_colors = #()
 		
 		export_node_children = ExportNodePlugin.getAllChildren()
 		
 		source_objects = this._excludeObjects(export_node_children)
 		
-		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_clones
+		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_sources_get_colors
 
-		this._removeAnimationKeys(export_clones)
-		
-		
-		--for export_source_get_colors in export_clones do
+		--for export_source_get_colors in export_sources_get_colors do
 		for i = 1 to source_objects.count do
 		(
-			get_color = export_clones[i]
+			get_color = export_sources_get_colors[i]
 			get_color.name = "get_color"
 
 			pointer = getHandleByAnim source_objects[i]
@@ -434,7 +431,7 @@ struct PrintExporter_v
 				vertex_colors_source[ pointer as string ] = verts_by_colors_wtf
 		)
 
-		delete export_clones
+		delete export_sources_get_colors
 	),
 	
 	/** Remove animation keys
@@ -460,25 +457,28 @@ struct PrintExporter_v
 		--export_copies = #()
 		
 		/* CLONE NODES FOR EXPORT */ 
-		maxOps.CloneNodes export_source expandHierarchy:true newNodes:&export_copies --offset:this.offset
+		maxOps.CloneNodes export_source expandHierarchy:true newNodes:&export_clones --offset:this.offset
+
 		
+	this._removeAnimationKeys(export_clones)
+
 		/* COLLAPSE CLONES */ 
-		for obj in export_copies do
+		for obj in export_clones do
 			convertTo obj PolyMeshObject
 			
 		/* OFFSET OBJECTS BY FRAME NUMBER */ 
-		move export_copies this.offset		
+		move export_clones this.offset		
 		
-		for i = 1 to export_copies.count do
+		for i = 1 to export_clones.count do
 		(
-			export_copies[i].parent = undefined
+			export_clones[i].parent = undefined
 			
-			export_copies[i].name = export_source[i].name + "-EXPORTING"
-			--export_copies[i].name = "export_copy"
+			export_clones[i].name = export_source[i].name + "-EXPORTING"
+			--export_clones[i].name = "export_copy"
 		)
 
 		
-		export_copies --return
+		export_clones --return
 	),
 	
 	/** Set exporter
