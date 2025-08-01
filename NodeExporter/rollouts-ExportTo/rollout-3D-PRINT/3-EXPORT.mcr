@@ -28,7 +28,7 @@ icon:	"control:editText|across:1|offset:[ 0, 4 ]|value:support-source|toolTip:Do
   */
 macroscript	_export_print
 category:	"_Export"
-buttontext:	"Export"
+buttontext:	"E X P O R T"
 toolTip:	"Export selected nodes to files"
 icon:	"height:64|across:3|offset:[ 0, 6 ]"
 (

@@ -35,8 +35,8 @@ icon:	"control:radiobuttons|unselect:true|across:2|items:#('Chitubox', 'LycheSli
 		--format "EventFired	= % \n" EventFired
 	
 		/* SET EXPORT FORMAT TO STL IF LycheSlicer is used (LycheSlicer import holes in *.obj files ) */
-		--if EventFired.val == 2 then
-		DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_export_format.state = EventFired.val
+		if EventFired.val != 0 then
+			DIALOG_nodeexporter.ExportTo.ROLLOUT_3d_print.RB_export_format.state = EventFired.val
 		
 	)
 )

@@ -38,7 +38,7 @@ struct ExporterSetup_v
 	function export  =
 	(
 		format "\n"; print "ExporterSetup_v.export()"
-
+G
 		whenExportNodeSelectedStart()
 
 		if( (this._getSelectedNodes()).count > 0 ) then
@@ -109,8 +109,9 @@ struct ExporterSetup_v
 		Exporter.params[#ANIMATION]	= ROLLOUT_3d_print.CBX_export_animation.state
 		Exporter.params[#KEEP_EXPORTED]	= ROLLOUT_3d_print.CBX_keep_exported.state
 		Exporter.params[#OFFSET]	= ROLLOUT_3d_print.CBX_offset.state
-		Exporter.params[#LAYER_BY_OBJ]	= ROLLOUT_3d_print.CBX_layer_by_obj.state
+		--Exporter.params[#LAYER_BY_OBJ]	= ROLLOUT_3d_print.CBX_layer_by_obj.state
 		Exporter.params[#UNSMOOTH_VERTEX_COLOR]	= ROLLOUT_3d_print.CBX_unsmooth_vertex_color.state
+		Exporter.params[#INNER_BLACK]	= ROLLOUT_3d_print.CBX_inner_black.state
 		Exporter.params[#EXPORTED_SUFFIX]	= ROLLOUT_3d_print.ET_exported_suffix.text
 
 		Exporter.export()

@@ -19,20 +19,21 @@ struct PrintExporter_v
 	ExportNodesToExport,
 
 
-	/* properties */
-	params	= Dictionary #( #EXPORT_FORMAT, "obj" )\
-					 #( #EXPORT_SCALE, 1 )\
-					 #( #SUBDIR_BY_NODE, false )\
-					 #( #FIX_POSITION, false )\
-					 #( #OPEN_IN, 0 )\
-					 #( #PROJECT_FILE_OPEN, false )\
-					 #( #EXCLUDE, "" )\
-					 #( #ANIMATION, false )\
-					 #( #UNSMOOTH_VERTEX_COLOR, false )\
-					 #( #KEEP_EXPORTED, false ) \
-					 #( #LAYER_BY_OBJ, false ) \
-					 #( #EXPORTED_SUFFIX, "" ) \
-					 #( #OFFSET, false ),
+    /* properties */
+    params = Dictionary #( #EXPORT_FORMAT,	"obj" )\
+                        #( #EXPORT_SCALE,	1 )\
+                        #( #SUBDIR_BY_NODE,	false )\
+                        #( #FIX_POSITION,	false )\
+                        #( #PROJECT_FILE_OPEN,	false )\
+                        #( #ANIMATION,	false )\
+                        #( #UNSMOOTH_VERTEX_COLOR,	false )\
+                        #( #KEEP_EXPORTED,	false )\
+                        #( #INNER_BLACK,	false )\
+                        #( #OFFSET,	false )\
+                        #( #EXPORTED_SUFFIX,	"" )\
+                        #( #EXCLUDE,	"" )\
+                        #( #OPEN_IN,	0 ),
+                        --#( #LAYER_BY_OBJ,	false )\
 
 	open_in_programs = #( #("C:/Program Files/CHITUBOX  V1.9.4/Chitubox.exe", "chitubox"), #("C:/Program Files/LycheeSlicer/LycheeSlicer.exe", "lys")),
 
@@ -83,7 +84,7 @@ struct PrintExporter_v
 		format "end_time: %\n" end_time
 		export_keys = for export_key = current_time to end_time collect export_key 
 		
-		if params[#ANIMATION] and not queryBox ("Export animation of keys " + export_keys as string ) title:"EXPORT ANIMATION"  beep:false then
+		if params[#ANIMATION] and not queryBox ("EXPORT ANIMATION ?\n\n FRAMES: " + (amin export_keys) as string +" - "+ (amax export_keys) as string ) title:"EXPORT ANIMATION"  beep:false then
 			 return false
 			 --params[#ANIMATION] = false
 		
@@ -94,7 +95,7 @@ struct PrintExporter_v
 		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
 		
 		try(
-			
+			/* SAVE VERTEX COLORS */ 
 			if params[#KEEP_EXPORTED] and this.params[#UNSMOOTH_VERTEX_COLOR] then
 				for selected_node in this.ExportNodesToExport do
 					this._saveVertexColors (selected_node)
@@ -114,7 +115,8 @@ struct PrintExporter_v
 					EXPORT NODE
 				--------------------------------------------------------------------------------*/
 				for selected_node in this.ExportNodesToExport do
-					this._exportNode (selected_node) offset_x:(if i == 1 then false else this.params[#OFFSET] ) frame:i keep_exported:keep_exported
+					this._exportNode (selected_node) offset_x:this.params[#OFFSET] frame:i keep_exported:keep_exported
+					--this._exportNode (selected_node) offset_x:(if i == 1 then false else this.params[#OFFSET] ) frame:i keep_exported:keep_exported
 			
 				--this._fetchMaxState()
 			)
@@ -164,19 +166,18 @@ struct PrintExporter_v
 
 	/** Get export file path
 	 */
-	function getExportFilePath ExportNodePlugin =
+	function getExportFilePath ExportNodePlugin frame:undefined =
 	(
 		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
-		/** Get frame suffix
-		 */
-		function getFrameSuffix = if ( currentTime_frame = (currentTime.frame as integer ) as string ).count < 2 then "0" + currentTime_frame else currentTime_frame
+	
 
 		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
 
 		filename = ExportNodePlugin.name
 		
-		if params[#ANIMATION] then
-			filename += "-" + (getFrameSuffix())
+		--if params[#ANIMATION] then
+		if frame != undefined then 
+			filename += "-" + (this._getFrameSuffix(frame))
 
 		--format "FILENAME: %\n" filename
 		filename += "." + this.params[#EXPORT_FORMAT]
@@ -204,19 +205,16 @@ struct PrintExporter_v
 
 		max create mode
 
-		export_path 	= this.getExportFilePath(ExportNodePlugin)
-		export_node_children	= ExportNodePlugin.getAllChildren()
-		
-		
-		--format "EXPORT_OBJECTS: %\n" export_objects
+		export_path = this.getExportFilePath(ExportNodePlugin) frame:frame
 
+		export_node_children = ExportNodePlugin.getAllChildren()
+		
 		select export_node_children
 		
-		node_children_size = abs ( selection.max.x - selection.min.x )
-		
 		if offset_x then
-			this.offset.x += node_children_size + offset_x_gap
-		
+			this.offset.x = this._getOffsetByExportNodeWidth(ExportNodePlugin)(frame)
+			--this.offset.x += this._getOffsetByBaseobject(export_node_children)
+		format "this.offset.x: %\n" this.offset.x
 		
 		/* ENABLE MODIFIERS */
 		if this.params[#MESHSMOOTH] then
@@ -248,25 +246,35 @@ struct PrintExporter_v
 		if keep_exported then
 		(
 			format "EXPORT_SOURCES.COUNT: %\n" source_objects.count
-			
+			PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:(getFilenameFile(export_path))
+
 			/* RENAME OBJECTS BY EXPORT FILENAME */ 
 			for i = 1 to source_objects.count do
 			(
 				convertTo exported_objects[i] PolyMeshObject
 				
-				PrintPostExporter = PrintPostExporter_v(source_objects[i])(exported_objects[i])
+				PrintPostExporter.exported_object = exported_objects[i]
+				PrintPostExporter.source_object   = source_objects[i]
 		
 				/* RENAME EXPORTED COPY */ 
-				PrintPostExporter.renameObjects(getFilenameFile(export_path))(params[#EXPORTED_SUFFIX])
-			
-				/* ADD TO LAYER */ 
-				if params[#LAYER_BY_OBJ] then
-					PrintPostExporter.moveToLayer()
+				PrintPostExporter.renameObject (this._getFrameSuffix(frame)) params[#EXPORTED_SUFFIX]
 				
+				--/* ADD SUFFIX */ 
+				--PrintPostExporter.addSuffix(params[#EXPORTED_SUFFIX])
 				
 				/* COPY VERTEX COLOR */ 
 				if this.params[#UNSMOOTH_VERTEX_COLOR] then
 					PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
+				
+				if this.params[#INNER_BLACK] then
+					PrintPostExporter.setBlackVertexColorToInnerVerts()
+			
+				/* REPLACE OLD VERSION OF OBJECT */ 
+				PrintPostExporter.replaceOldVersionOfCopy()
+				
+				/* ADD TO LAYER */ 
+				--if params[#LAYER_BY_OBJ] then
+					--PrintPostExporter.moveToLayer()
 				
 			)
 					
@@ -284,34 +292,164 @@ struct PrintExporter_v
 			append this.exported_paths export_path
 	),
 	
+	/** Get export node width
+	 */
+	function _getOffsetByExportNodeWidth ExportNodePlugin frame =
+	(
+		format "\n"; print "PrintExporter_v._getOffsetByExportNodeWidth()"
+		format "frame: %\n" frame
+		
+		
+		if frame != undefined and frame > 0 then 
+		(
+			bbox	= nodeGetBoundingBox ExportNodePlugin ( ExportNodePlugin.transform ) -- return array of min\max positions E.G.: bbox[1].z | bbox[2].z
+			
+			node_size = bbox[2].x - bbox[1].x 
+			
+			node_size * frame --return
+		)
+		else
+			0
+	),
+	
+	/** Get frame suffix
+	 */
+	function _getFrameSuffix frame =
+	(
+		--format "\n"; print "PrintExporter_v._getFrameSuffix()"
+		if frame != undefined then
+		(
+			if ( frame_string = (frame as integer ) as string ).count < 2 then
+			   "0" + frame_string
+		   else
+			   frame_string
+		)
+		else
+			""
+	),
+
+	/** Get offset by bbounding box size of obejct
+	  * 
+	  * IMPORTANT:
+			BUNGINGBOX CAN CHANGE IF MESHMOOTH MODIFIER IS USED.
+			So BoungingBox is get from baseobejcts to keep consistent exports.
+	  * 
+	 */
+	function _getOffsetByBaseobject export_objects =
+	(
+		--format "\n"; print "PrintExporter_v._getOffsetByBaseobject()"
+		
+		/** Get temp meshes
+		 */
+		function getCopyOfBaseobjectMesh obj =
+		(
+			--format "\n"; print "PrintExporter_v.getTempMeshes()"
+			source_base_object = obj.baseObject
+			
+			-- Check if the base object has a mesh property (e.g., it's a geometry object)
+			if isProperty source_base_object #mesh then
+			(
+				-- 3. Create a new Editable_Mesh node
+				local new_node = Editable_Mesh()
+				
+				-- 4. Copy the mesh from the source base object to the new node's mesh
+				new_node.mesh = source_base_object.mesh
+				
+				-- Optional: Name the new node based on the source node
+				new_node.name = uniquename (obj.name + "_basecopy")
+				
+				-- Optional: Copy the source node's transform to the new node
+				new_node.transform = obj.transform
+				
+			)
+			
+			new_node --return
+		)
+		
+		/** Get bbox of multiple objects
+		 */
+		function getBboxOfMultipleObjects objs =
+		(
+			--format "\n"; print "PrintExporter_v.getBboxOfMultip[leObjects()"
+			--format "\n"; print "PrintExporter_v.getBboxOfMultip[leObjects()"
+			min_x =	min_y = min_z = 1e9
+			
+			max_x = max_y = max_z = -1e9
+			
+			for obj in objs do
+			(
+				bbox	= nodeGetBoundingBox obj ( Matrix3 1) -- return array of min\max positions E.G.: bbox[1].z | bbox[2].z
+
+				if bbox[1].x < min_x then min_x = bbox[1].x
+				if bbox[1].y < min_y then min_y = bbox[1].y
+                if bbox[1].z < min_z then min_z = bbox[1].z
+
+				if bbox[2].x > max_x then max_x = bbox[2].x
+				if bbox[2].y > max_y then max_y = bbox[2].y	
+				if bbox[2].z > max_z then max_z = bbox[2].z	
+				
+			)
+			
+			#( [ min_x, min_y, min_z ], [ max_x, max_y, max_z ]   ) --return
+		)
+		
+		temp_meshes = for obj in export_objects collect getCopyOfBaseobjectMesh obj
+			
+		bbox = getBboxOfMultipleObjects(temp_meshes)
+
+		delete temp_meshes
+		
+		abs(bbox[2].x - bbox[1].x) --return
+	),
+	
 	/** Save vertex colors
 	 */
 	function _saveVertexColors ExportNodePlugin =
 	(
 		--format "\n"; print "PrintExporter_v._saveVertexColors()"
-		--export_sources_get_colors = #()
+		--export_clones = #()
 		
 		export_node_children = ExportNodePlugin.getAllChildren()
 		
 		source_objects = this._excludeObjects(export_node_children)
 		
-		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_sources_get_colors
+		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_clones
 
-		--for export_source_get_colors in export_sources_get_colors do
+		this._removeAnimationKeys(export_clones)
+		
+		
+		--for export_source_get_colors in export_clones do
 		for i = 1 to source_objects.count do
 		(
-			get_color = export_sources_get_colors[i]
+			get_color = export_clones[i]
 			get_color.name = "get_color"
 
 			pointer = getHandleByAnim source_objects[i]
 			
 			/* COLLAPSE SMOOTH */ 
-			verts_by_colors_wtf = smoothAndKeepVertexColors get_color
+			verts_by_colors_wtf = smoothAndKeepVertexColors get_color quiet:true
+			format "VERTS_BY_COLORS_WTF: %\n" verts_by_colors_wtf
 
-			vertex_colors_source[ pointer as string ] = verts_by_colors_wtf
+			if verts_by_colors_wtf != false then
+				vertex_colors_source[ pointer as string ] = verts_by_colors_wtf
 		)
 
-		delete export_sources_get_colors
+		delete export_clones
+	),
+	
+	/** Remove animation keys
+	 */
+	function _removeAnimationKeys export_clones =
+	(
+		--format "\n"; print "PrintExporter_v._removeAnimationKeys()"
+		for obj in export_clones do
+		(
+			-- transform controllers: position, rotation, scale
+			track_list = #(obj.position.controller, obj.rotation.controller, obj.scale.controller)
+	
+			for ctrl in track_list do
+				deleteKeys track_list #allKeys
+		)
 	),
 	
 	/** Get copy of export objects
@@ -327,8 +465,8 @@ struct PrintExporter_v
 		/* COLLAPSE CLONES */ 
 		for obj in export_copies do
 			convertTo obj PolyMeshObject
-
-		/* OFFSET FRAME */ 
+			
+		/* OFFSET OBJECTS BY FRAME NUMBER */ 
 		move export_copies this.offset		
 		
 		for i = 1 to export_copies.count do
@@ -337,7 +475,8 @@ struct PrintExporter_v
 			
 			export_copies[i].name = export_source[i].name + "-EXPORTING"
 			--export_copies[i].name = "export_copy"
-		)		
+		)
+
 		
 		export_copies --return
 	),

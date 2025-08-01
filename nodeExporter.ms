@@ -15,6 +15,7 @@ filein( getFilenamePath(getSourceFileName()) + "/NodeExporter/rollouts-ExportTo/
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/VertexColors/VertexColors.ms" )	--"./../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/VertexColors/VertexColors.ms"
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/smoothAndKeepVertexColors/smoothAndKeepVertexColors.ms" )	--"./../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/smoothAndKeepVertexColors/smoothAndKeepVertexColors.ms"
 
+filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/VertexColors/VertexColors.ms" )	--"./../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-06-VERTEX_COLORS/Lib/VertexColors/VertexColors.ms"
 
 global DIALOG_nodeexporter
 global ROLLOUT_3d_print
