@@ -146,19 +146,29 @@ struct PrintPostExporter_v
 	function setBlackVertexColorToInnerVerts =
 	(
 		format "\n"; print "PrintPostExporter_v.setBlackVertexColorToInnerVerts()"
+		--format "exported_objects: %\n" exported_objects
+		black_verts = #{}
 		
-		black_verts = polyop.getVertsByColor exported_object black 0.0 0.0 0.0
-		
-		if not black_verts.isEmpty then
-		(
-			format "black_verts: %\n" black_verts
-			format "-black_verts: %\n" -black_verts
-			inner_verts = getInternalVertsOfObject exported_object exported_objects verts:-black_verts
-			format "inner_verts: %\n" inner_verts
-			if not inner_verts.isEmpty then
-				polyop.setVertColor exported_object.baseobject 0 inner_verts black
-		)
+		/* TEST IF VERTEX COLORS ARE SUPPORTED */ 
+		has_vertex_color_map_channel = polyop.getMapSupport exported_object 0
 
+		/* GET BLAVK VERTS */ 
+		if has_vertex_color_map_channel then
+			black_verts = polyop.getVertsByColor exported_object black 0.0 0.0 0.0
+		
+		/* GET IINER VERTS */ 
+		inner_verts = getInternalVertsOfObject exported_object exported_objects verts:-black_verts
+		
+		/* SET INNER VERTS AS BLACK */ 
+		if not inner_verts.isEmpty then
+		(
+			/* ENABLE VERTEX COLORS */ 
+			if not has_vertex_color_map_channel then
+				polyop.setMapSupport exported_object 0 true
+			
+			/* SET VERTEX COLOR */ 
+			polyop.setVertColor exported_object.baseobject 0 inner_verts black
+		)
 	),
 
 	private

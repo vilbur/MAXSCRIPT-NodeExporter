@@ -94,8 +94,9 @@ struct PrintExporter_v
 		try(
 			/* SAVE VERTEX COLORS */ 
 			if keep_exported and this.params[#UNSMOOTH_VERTEX_COLOR] then
-				for selected_node in this.ExportNodesToExport do
-					this._saveVertexColors (selected_node)
+				for export_node in this.ExportNodesToExport do
+					this._saveVertexColors (export_node)
+			
 			
 			for frame in export_keys do 
 			(
@@ -108,23 +109,50 @@ struct PrintExporter_v
 				for selected_node in this.ExportNodesToExport do
 				(
 					export_node = if not keep_exported then selected_node else this._cloneExportObjects selected_node offset_x:this.params[#OFFSET] frame:frame
-					
+			
+					/*------------------------------------------------------------------------------
+						EXPORT NODE
+					--------------------------------------------------------------------------------*/
 					this._exportNode (export_node) --frame:frame --offset_x:this.params[#OFFSET] frame:frame keep_exported:keep_exported
 					
 					if keep_exported then
 					(
 						--PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
-						PrintPostExporter = PrintPostExporter_v exported_objects:( export_node.getAllChildren() )
+
+						export_node_children = export_node.getAllChildren()
+
+						excluded_objects = this._getExcludeObjects(export_node_children)
+
+
+						PrintPostExporter = PrintPostExporter_v exported_objects:export_node_children
 						--PrintPostExporter = PrintPostExporter_v()
 					
 						PrintPostExporter.moveToLayer export_node.text
 					
+					
+						for exported_object in export_node_children where isValidNode exported_object do
+						(
+							PrintPostExporter.exported_object = exported_object
+					
+							exported_object.parent = export_node
+							
+							source_pointer = getUserPropVal exported_object "SOURCE_OBJECT" asString:true
+								
+							/* COPY VERTEX COLOR */ 
+							if this.params[#UNSMOOTH_VERTEX_COLOR] then
+								PrintPostExporter.copyVertexColors(vertex_colors_source[source_pointer])
+							
+							if this.params[#INNER_BLACK] then
+								PrintPostExporter.setBlackVertexColorToInnerVerts()							
+							
+						)
+					
+						delete excluded_objects
 					--	/* RENAME OBJECTS BY EXPORT FILENAME */ 
 					--	for i = 1 to source_objects.count do
 					--	(
 					--		convertTo exported_objects[i] PolyMeshObject
 					--		
-					--		PrintPostExporter.exported_object = exported_objects[i]
 					--		PrintPostExporter.source_object   = source_objects[i]
 					--
 					--		/* RENAME EXPORTED COPY */ 
@@ -134,11 +162,10 @@ struct PrintExporter_v
 					--		--PrintPostExporter.addSuffix(params[#EXPORTED_SUFFIX])
 					--		
 					--		/* COPY VERTEX COLOR */ 
-					--		if this.params[#UNSMOOTH_VERTEX_COLOR] then
-					--			PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
+							--if this.params[#UNSMOOTH_VERTEX_COLOR] then
+								--PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
 					--		
-					--		if this.params[#INNER_BLACK] then
-					--			PrintPostExporter.setBlackVertexColorToInnerVerts()
+
 					--	
 					--		/* REPLACE OLD VERSION OF OBJECT */ 
 					--		PrintPostExporter.replaceOldVersionOfCopy(ExportNodePlugin_offset)
@@ -279,13 +306,7 @@ struct PrintExporter_v
 		
 		ExportNodePlugin_old = this._getOldExportNode export_node_name	
 		
-		/*------------------------------------------------------------------------------
-			COPY OBJECTS TO EXPORT
-		--------------------------------------------------------------------------------*/
-		
-		--offset = if ExportNodePlugin_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth ExportNode frame
 		offset = if ExportNodePlugin_old != undefined then (ExportNodePlugin_old.pos - ExportNode.pos) else this._getOffsetByExportNodeWidth ExportNode frame
-		format "OFFSET: %\n" offset
 		
 		if ExportNodePlugin_old != undefined then
 		(
@@ -323,17 +344,16 @@ struct PrintExporter_v
 		for obj in export_clones  where classOf obj != ExportNodePlugin do
 			convertTo obj PolyMeshObject
 		
-        this._removeAnimationFromExportedObjects(export_clones)
-		
+
 		for i = 1 to export_clones.count do
 		(
 			export_clones[i].name = source_objects[i].name
 			
-			--export_clones[i].parent = undefined
-			
-			--export_clones[i].name = export_node_children[i].name + "-EXPORTING"
-			--export_clones[i].name = "export_copy"
+			/* SAVE SOURCE OBJECT POINTER TO USER OF OBJECT COPY */ 
+			setUserPropVal export_clones[i] "SOURCE_OBJECT" ( getHandleByAnim source_objects[i] ) asString:true
 		)
+		
+        this._removeAnimationFromExportedObjects(export_clones)
 		
 		export_clones --return
 	),
@@ -425,14 +445,14 @@ struct PrintExporter_v
 	(
 		--format "\n"; print "PrintExporter_v._saveVertexColors()"
 		--export_sources_get_colors = #()
-		
 		export_node_children = ExportNode.getAllChildren()
 		
 		source_objects = this._excludeObjects(export_node_children)
-		
+		format "source_objects: %\n" source_objects
+		format "source_objects.count: %\n" source_objects.count
 		maxOps.CloneNodes source_objects expandHierarchy:true newNodes:&export_sources_get_colors
 
-		--for export_source_get_colors in export_sources_get_colors do
+
 		for i = 1 to source_objects.count do
 		(
 			get_color = export_sources_get_colors[i]
@@ -448,6 +468,8 @@ struct PrintExporter_v
 				vertex_colors_source[ pointer as string ] = verts_by_colors_wtf
 		)
 
+		format "vertex_colors_source.keys: %\n" vertex_colors_source.keys
+		
 		delete export_sources_get_colors
 	),
 	
@@ -676,8 +698,18 @@ struct PrintExporter_v
 	function _excludeObjects export_objects =
 	(
 		--format "\n"; print "PrintExporter_v.excludeObejcts()"
+		excluded_objects = this._getExcludeObjects (export_objects) 
+		
+		for obj in export_objects where findItem excluded_objects obj == 0 collect obj
+	),
+	
+	/** Exclude obejcts matching name
+	 */
+	function _getExcludeObjects export_objects =
+	(
+		--format "\n"; print "PrintExporter_v.excludeObejcts()"
 
-		export_objects = deepCopy export_objects -- copy to avoid modifyng source array
+		excluded_objects = #()
 		
 		/** Matching name
 		 */
@@ -687,13 +719,11 @@ struct PrintExporter_v
 		(
 			pattern = ".*("+params[#EXCLUDE]+").*"
 
-			for i = export_objects.count to 1 by -1 where matchingName export_objects[i].name pattern do
-				deleteItem export_objects (findItem export_objects export_objects[i])
+			excluded_objects = for obj in export_objects where matchingName obj.name pattern collect obj
 		)
 
-		export_objects --return
+		excluded_objects --return
 	),
-
 
 	/** set Success message
 	 */
