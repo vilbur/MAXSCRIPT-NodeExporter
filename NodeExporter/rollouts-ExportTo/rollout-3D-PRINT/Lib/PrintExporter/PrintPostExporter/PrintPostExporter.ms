@@ -49,7 +49,7 @@ struct PrintPostExporter_v
 	
 	/** Replace old copy
 	 */
-	function replaceOldVersionOfCopy =
+	function replaceOldVersionOfCopy ExportNodePlugin_offset =
 	(
 		--format "\n"; print "PrintPostExporter_v.replaceOldVersionOfCopy()"
 		old_version = undefined 
@@ -75,9 +75,9 @@ struct PrintPostExporter_v
 		)
 		else
 		(
-			old_version.baseobject = exported_object.baseobject 	
+			--old_version.baseobject = exported_object.baseobject 	
 			
-			delete exported_object
+			delete old_version
 		)
 		
 	),
@@ -102,30 +102,28 @@ struct PrintPostExporter_v
 	
 	/** Move to layer
 	 */
-	function moveToLayer =
+	function moveToLayer layer_name =
 	(
 		format "\n"; print "PrintPostExporter_v.moveToLayer()"
-		top_player_name =  "--- EXPORTED ---"
+		top_layer_name =  "--- EXPORTED ---"
 		
-		exported_layer = LayerManager.getLayerFromName filename
+		exported_layer = LayerManager.getLayerFromName layer_name
 		--format "layer_of_obj: %\n" layer_of_obj
 		
 		if exported_layer == undefined then
 		(
 			
-			if (parent_layer = LayerManager.getLayerFromName top_player_name) == undefined then
-				parent_layer = LayerManager.newLayerFromName top_player_name
+			if (parent_layer = LayerManager.getLayerFromName top_layer_name) == undefined then
+				parent_layer = LayerManager.newLayerFromName top_layer_name
 				
 				
-			exported_layer = LayerManager.newLayerFromName filename
-			
-			--exported_layer = LayerManager.getLayerFromName filename
+			exported_layer = LayerManager.newLayerFromName layer_name
 			
 			exported_layer.setParent parent_layer
 		)
 		
 		/* ADD NODE TO LAYER */ 
-		exported_layer.addNode exported_object
+		exported_layer.addnodes  exported_objects
 		
 	),
 	
