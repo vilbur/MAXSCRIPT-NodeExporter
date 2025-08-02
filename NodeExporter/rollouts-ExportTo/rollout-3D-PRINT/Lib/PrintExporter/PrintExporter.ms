@@ -275,85 +275,34 @@ struct PrintExporter_v
 		--max create mode
 		ExportNode_clone = undefined 
         --export_node_children = ExportNode.getAllChildren()
-	
+		export_node_name = ExportNode.text + "-" + this._getFrameSuffix frame
+		
+		ExportNodePlugin_old = this._getOldExportNode export_node_name	
+		
 		/*------------------------------------------------------------------------------
 			COPY OBJECTS TO EXPORT
-		--------------------------------------------------------------------------------*/		
-		offset = this._getOffsetByExportNodeWidth ExportNode frame
-
+		--------------------------------------------------------------------------------*/
+		
+		--offset = if ExportNodePlugin_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth ExportNode frame
+		offset = if ExportNodePlugin_old != undefined then (ExportNodePlugin_old.pos - ExportNode.pos) else this._getOffsetByExportNodeWidth ExportNode frame
+		format "OFFSET: %\n" offset
+		
+		if ExportNodePlugin_old != undefined then
+		(
+			delete (ExportNodePlugin_old.getAllChildren())
+			
+			delete ExportNodePlugin_old
+		)
+		
 		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
 		export_clones = this._getCopyOfExportObjects(ExportNode) offset
 		
 		for export_clone in export_clones where classOf export_clone == ExportNodePlugin do
 			ExportNode_clone = export_clone
 			
-			
-		ExportNode_clone.text = ExportNode.text + "-" + this._getFrameSuffix frame
+		ExportNode_clone.text = export_node_name
 		
 		ExportNode_clone --return
-		
-		
-		--if frame != undefined then 
-			--ExportNodePlugin_offset = this._moveToExportPosition(export_copies)(filename)(ExportNode)(frame)
-		
-		/* GET SOURCE OBJECTS OF EXPORTED OBJECTS */ 
-		
-		/* EXPORTED OBJECTS */ 
-		--export_objects = this._excludeObjects(export_clones)
-		
-		--exported_objects = this._excludeObjects(export_copies)
-		
-		/*------------------------------------------------------------------------------
-			EXPORT
-		--------------------------------------------------------------------------------*/
-		
-		/*------------------------------------------------------------------------------
-			DELETE OR RENAME EXPORTED OBJECT 
-		--------------------------------------------------------------------------------*/
-		--if keep_exported then
-		--(
-		--	format "EXPORT_SOURCES.COUNT: %\n" source_objects.count
-		--	PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
-		--
-		--	/* RENAME OBJECTS BY EXPORT FILENAME */ 
-		--	for i = 1 to source_objects.count do
-		--	(
-		--		convertTo exported_objects[i] PolyMeshObject
-		--		
-		--		PrintPostExporter.exported_object = exported_objects[i]
-		--		PrintPostExporter.source_object   = source_objects[i]
-		--
-		--		/* RENAME EXPORTED COPY */ 
-		--		PrintPostExporter.renameObject (this._getFrameSuffix(frame)) params[#EXPORTED_SUFFIX]
-		--		
-		--		--/* ADD SUFFIX */ 
-		--		--PrintPostExporter.addSuffix(params[#EXPORTED_SUFFIX])
-		--		
-		--		/* COPY VERTEX COLOR */ 
-		--		if this.params[#UNSMOOTH_VERTEX_COLOR] then
-		--			PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
-		--		
-		--		if this.params[#INNER_BLACK] then
-		--			PrintPostExporter.setBlackVertexColorToInnerVerts()
-		--	
-		--		/* REPLACE OLD VERSION OF OBJECT */ 
-		--		PrintPostExporter.replaceOldVersionOfCopy(ExportNodePlugin_offset)
-		--		
-		--		/* ADD TO LAYER */ 
-		--		--if params[#LAYER_BY_OBJ] then
-		--			--PrintPostExporter.moveToLayer()
-		--		
-		--	)
-		--			
-		--	/* DELETE EXCLUDED OBJECTS */ 
-		--	for i = 1 to export_copies.count where findItem exported_objects export_copies[i] == 0 do
-		--		delete export_copies[i]
-		--			
-		--)
-		--else
-		--	delete export_copies
-		
-
 	),
 	
 	/** Get copy of export objects
@@ -387,6 +336,23 @@ struct PrintExporter_v
 		)
 		
 		export_clones --return
+	),
+	
+	/** Get old ecport node
+	 */
+	function _getOldExportNode export_node_name =
+	(
+		--format "\n"; print "PrintExporter_v._getOldExportNode()"
+		ExportNodePlugin_old = undefined
+		
+		if ( same_name_objects = getNodeByName export_node_name all:true ).count > 0 then
+        (
+            for same_name_object in same_name_objects where classOf same_name_object == ExportNodePlugin do
+                ExportNodePlugin_old = same_name_object
+			format "ExportNodePlugin_old: %\n" ExportNodePlugin_old
+		)
+		
+		ExportNodePlugin_old --return
 	),
 	
     /** Move to export position
@@ -451,80 +417,6 @@ struct PrintExporter_v
 		)
 		else
 			""
-	),
-
-	/** Get offset by bbounding box size of obejct
-	  * 
-	  * IMPORTANT:
-			BUNGINGBOX CAN CHANGE IF MESHMOOTH MODIFIER IS USED.
-			So BoungingBox is get from baseobejcts to keep consistent exports.
-	  * 
-	 */
-	function _getOffsetByBaseobject export_objects =
-	(
-		--format "\n"; print "PrintExporter_v._getOffsetByBaseobject()"
-		
-		/** Get temp meshes
-		 */
-		function getCopyOfBaseobjectMesh obj =
-		(
-			--format "\n"; print "PrintExporter_v.getTempMeshes()"
-			source_base_object = obj.baseObject
-			
-			-- Check if the base object has a mesh property (e.g., it's a geometry object)
-			if isProperty source_base_object #mesh then
-			(
-				-- 3. Create a new Editable_Mesh node
-				local new_node = Editable_Mesh()
-				
-				-- 4. Copy the mesh from the source base object to the new node's mesh
-				new_node.mesh = source_base_object.mesh
-				
-				-- Optional: Name the new node based on the source node
-				new_node.name = uniquename (obj.name + "_basecopy")
-				
-				-- Optional: Copy the source node's transform to the new node
-				new_node.transform = obj.transform
-				
-			)
-			
-			new_node --return
-		)
-		
-		/** Get bbox of multiple objects
-		 */
-		function getBboxOfMultipleObjects objs =
-		(
-			--format "\n"; print "PrintExporter_v.getBboxOfMultip[leObjects()"
-			--format "\n"; print "PrintExporter_v.getBboxOfMultip[leObjects()"
-			min_x =	min_y = min_z = 1e9
-			
-			max_x = max_y = max_z = -1e9
-			
-			for obj in objs do
-			(
-				bbox	= nodeGetBoundingBox obj ( Matrix3 1) -- return array of min\max positions E.G.: bbox[1].z | bbox[2].z
-
-				if bbox[1].x < min_x then min_x = bbox[1].x
-				if bbox[1].y < min_y then min_y = bbox[1].y
-                if bbox[1].z < min_z then min_z = bbox[1].z
-
-				if bbox[2].x > max_x then max_x = bbox[2].x
-				if bbox[2].y > max_y then max_y = bbox[2].y	
-				if bbox[2].z > max_z then max_z = bbox[2].z	
-				
-			)
-			
-			#( [ min_x, min_y, min_z ], [ max_x, max_y, max_z ]   ) --return
-		)
-		
-		temp_meshes = for obj in export_objects collect getCopyOfBaseobjectMesh obj
-			
-		bbox = getBboxOfMultipleObjects(temp_meshes)
-
-		delete temp_meshes
-		
-		abs(bbox[2].x - bbox[1].x) --return
 	),
 	
 	/** Save vertex colors
