@@ -55,7 +55,7 @@ struct PrintExporter_v
 	
 	/* dependency */
 	Exporter,
-	PrintPostExporter,
+	PostExporter,
 
 	/* reference */
 	/* inhered */
@@ -117,22 +117,22 @@ struct PrintExporter_v
 					
 					if keep_exported then
 					(
-						--PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
+						--PostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
 
 						export_node_children = export_node.getAllChildren()
 
 						excluded_objects = this._getExcludeObjects(export_node_children)
 
 
-						PrintPostExporter = PrintPostExporter_v exported_objects:export_node_children
-						--PrintPostExporter = PrintPostExporter_v()
+						PostExporter = PrintPostExporter_v exported_objects:export_node_children
+						--PostExporter = PrintPostExporter_v()
 					
-						PrintPostExporter.moveToLayer export_node.text
+						PostExporter.moveToLayer export_node.text
 					
 					
 						for exported_object in export_node_children where isValidNode exported_object do
 						(
-							PrintPostExporter.exported_object = exported_object
+							PostExporter.exported_object = exported_object
 					
 							exported_object.parent = export_node
 							
@@ -140,46 +140,15 @@ struct PrintExporter_v
 								
 							/* COPY VERTEX COLOR */ 
 							if this.params[#UNSMOOTH_VERTEX_COLOR] then
-								PrintPostExporter.copyVertexColors(vertex_colors_source[source_pointer])
+								PostExporter.copyVertexColors(vertex_colors_source[source_pointer])
 							
 							if this.params[#INNER_BLACK] then
-								PrintPostExporter.setBlackVertexColorToInnerVerts()							
+								PostExporter.setBlackVertexColorToInnerVerts()							
 							
 						)
 					
 						delete excluded_objects
-					--	/* RENAME OBJECTS BY EXPORT FILENAME */ 
-					--	for i = 1 to source_objects.count do
-					--	(
-					--		convertTo exported_objects[i] PolyMeshObject
-					--		
-					--		PrintPostExporter.source_object   = source_objects[i]
-					--
-					--		/* RENAME EXPORTED COPY */ 
-					--		PrintPostExporter.renameObject (this._getFrameSuffix(frame)) params[#EXPORTED_SUFFIX]
-					--		
-					--		--/* ADD SUFFIX */ 
-					--		--PrintPostExporter.addSuffix(params[#EXPORTED_SUFFIX])
-					--		
-					--		/* COPY VERTEX COLOR */ 
-							--if this.params[#UNSMOOTH_VERTEX_COLOR] then
-								--PrintPostExporter.copyVertexColors(vertex_colors_source[ (getHandleByAnim source_objects[i]) as string ])
-					--		
-
-					--	
-					--		/* REPLACE OLD VERSION OF OBJECT */ 
-					--		PrintPostExporter.replaceOldVersionOfCopy(ExportNodePlugin_offset)
-					--		
-					--		/* ADD TO LAYER */ 
-					--		--if params[#LAYER_BY_OBJ] then
-					--			--PrintPostExporter.moveToLayer()
-					--		
-					--	)
-					--			
-					--	/* DELETE EXCLUDED OBJECTS */ 
-					--	for i = 1 to export_copies.count where findItem exported_objects export_copies[i] == 0 do
-					--		delete export_copies[i]
-					--			
+	
 					)
 				)
 			)
@@ -300,14 +269,14 @@ struct PrintExporter_v
     (
         format "\n"; print "PrintExporter_v._cloneExportObjects()"
 		--max create mode
-		ExportNode_clone = undefined 
         --export_node_children = ExportNode.getAllChildren()
 		export_node_name = ExportNode.text + "-" + this._getFrameSuffix frame
 		
 		ExportNodePlugin_old = this._getOldExportNode export_node_name	
 		
-		offset = if ExportNodePlugin_old != undefined then (ExportNodePlugin_old.pos - ExportNode.pos) else this._getOffsetByExportNodeWidth ExportNode frame
-		
+		--offset = if ExportNodePlugin_old != undefined then (ExportNodePlugin_old.pos - ExportNode.pos) else this._getOffsetByExportNodeWidth ExportNode frame
+		offset = if ExportNodePlugin_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth ExportNode frame
+	
 		if ExportNodePlugin_old != undefined then
 		(
 			delete (ExportNodePlugin_old.getAllChildren())
@@ -316,11 +285,12 @@ struct PrintExporter_v
 		)
 		
 		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
-		export_clones = this._getCopyOfExportObjects(ExportNode) offset
+		export_clones = this._getCopyOfExportObjects(ExportNode)(frame)
 		
-		for export_clone in export_clones where classOf export_clone == ExportNodePlugin do
-			ExportNode_clone = export_clone
-			
+		ExportNode_clone = this._getClonedExportNode (export_clones)
+		
+		ExportNode_clone.pos = offset
+		
 		ExportNode_clone.text = export_node_name
 		
 		ExportNode_clone --return
@@ -328,7 +298,7 @@ struct PrintExporter_v
 	
 	/** Get copy of export objects
 	 */
-	function _getCopyOfExportObjects ExportNode offset =
+	function _getCopyOfExportObjects ExportNode frame =
 	(
 		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
 
@@ -337,17 +307,18 @@ struct PrintExporter_v
 		
 		
 		/* CLONE NODES FOR EXPORT */ 
-		maxOps.CloneNodes ExportNode expandHierarchy:true actualNodeList:&source_objects newNodes:&export_clones offset:offset
+		maxOps.CloneNodes ExportNode expandHierarchy:true actualNodeList:&source_objects newNodes:&export_clones --offset:offset
     
 
 		/* COLLAPSE CLONES */ 
 		for obj in export_clones  where classOf obj != ExportNodePlugin do
 			convertTo obj PolyMeshObject
-		
+
 
 		for i = 1 to export_clones.count do
 		(
-			export_clones[i].name = source_objects[i].name
+			/* RENAME OBJECTS */ 
+			export_clones[i].name = source_objects[i].name + (this._getFrameSuffix frame)
 			
 			/* SAVE SOURCE OBJECT POINTER TO USER OF OBJECT COPY */ 
 			setUserPropVal export_clones[i] "SOURCE_OBJECT" ( getHandleByAnim source_objects[i] ) asString:true
@@ -356,6 +327,19 @@ struct PrintExporter_v
         this._removeAnimationFromExportedObjects(export_clones)
 		
 		export_clones --return
+	),
+	
+	/** Get cloned export node
+	 */
+	function _getClonedExportNode export_clones =
+	(
+		--format "\n"; print "PrintExporter_v._getClonedExportNode()"
+		ExportNode_clone = undefined 
+
+		for export_clone in export_clones where classOf export_clone == ExportNodePlugin do
+			ExportNode_clone = export_clone
+			
+		ExportNode_clone --return
 	),
 	
 	/** Get old ecport node
@@ -374,34 +358,7 @@ struct PrintExporter_v
 		
 		ExportNodePlugin_old --return
 	),
-	
-    /** Move to export position
-     */
-    function _moveToExportPosition export_clones filename ExportNode frame =
-	(
-		format "\n"; print "PrintExporter_v._moveToExportPosition()"
-		ExportNodePlugin_offset = undefined
-		
-		if ( same_name_objects = getNodeByName filename all:true ).count > 0 then
-        (
-            for same_name_object in same_name_objects where classOf same_name_object == ExportNodePlugin do
-                ExportNodePlugin_offset = same_name_object
-			format "ExportNodePlugin_offset: %\n" ExportNodePlugin_offset
-		)
-		
-		if ExportNodePlugin_offset == undefined then 
-			ExportNodePlugin_offset = ExportNodePlugin name:filename text:filename export_dir:ExportNode.export_dir size:ExportNode.size pos:(this._getOffsetByExportNodeWidth(ExportNode)(frame))
-		
-		/* OFFSET OBJECTS BY FRAME NUMBER */ 
-		--move export_clones this.offset		
-		move export_clones ExportNodePlugin_offset.pos		
-		
-	
-		for export_clone in export_clones do
-			export_clone.parent = ExportNodePlugin_offset
 
-		ExportNodePlugin_offset --return
-	),
 	
 	/** Get export node width
 	 */
@@ -431,9 +388,9 @@ struct PrintExporter_v
 		if frame != undefined then
 		(
 			if ( frame_string = (frame as integer ) as string ).count < 2 then
-			   "0" + frame_string
+			   "-0" + frame_string
 		   else
-			   frame_string
+			   "-"+frame_string
 		)
 		else
 			""
