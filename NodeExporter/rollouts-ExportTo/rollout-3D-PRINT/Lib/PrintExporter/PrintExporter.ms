@@ -103,19 +103,20 @@ struct PrintExporter_v
 			
 			
 			--this._setExportLastKeyFrame
-			for i = 1 to export_keys.count do 
+			--for i = 1 to export_keys.count do
+			for frame in export_keys do 
 			(
-				export_key = export_keys[i]
+				--frame = export_keys[i]
 				--this._holdMaxState()
 				
-				format "export_key: %\n" export_key
-				this._setTimeSlider (export_key)
+				format "frame: %\n" frame
+				this._setTimeSlider (frame)
 				
 				/*------------------------------------------------------------------------------
 					EXPORT NODE
 				--------------------------------------------------------------------------------*/
 				for selected_node in this.ExportNodesToExport do
-					this._exportNode (selected_node) offset_x:this.params[#OFFSET] frame:i keep_exported:keep_exported
+					this._exportNode (selected_node) offset_x:this.params[#OFFSET] frame:frame keep_exported:keep_exported
 					--this._exportNode (selected_node) offset_x:(if i == 1 then false else this.params[#OFFSET] ) frame:i keep_exported:keep_exported
 			
 				--this._fetchMaxState()
@@ -166,14 +167,14 @@ struct PrintExporter_v
 
 	/** Get export file path
 	 */
-	function getExportFilePath ExportNodePlugin frame:undefined =
+	function getExportFilePath ExportNode frame:undefined =
 	(
 		--format "\n"; print "ExporterSetup_v.getExportFilePath()"
 	
 
-		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNodePlugin.name + "/" else "/"
+		subdir = if this.params[#SUBDIR_BY_NODE] then "/"+ExportNode.name + "/" else "/"
 
-		filename = ExportNodePlugin.name
+		filename = ExportNode.name
 		
 		--if params[#ANIMATION] then
 		if frame != undefined then 
@@ -182,7 +183,7 @@ struct PrintExporter_v
 		--format "FILENAME: %\n" filename
 		filename += "." + this.params[#EXPORT_FORMAT]
 		
-		export_path =  (this._getExportDir(ExportNodePlugin.export_dir)) + subdir + filename
+		export_path =  (this._getExportDir(ExportNode.export_dir)) + subdir + filename
 
 
 		( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace export_path "\\\\" -- return
@@ -197,24 +198,27 @@ struct PrintExporter_v
 		EXPORT NODE
 
 	--------------------------------------------------------------------------------*/
-	function _exportNode ExportNodePlugin keep_exported:false offset_x:false frame:undefined =
+	function _exportNode ExportNode keep_exported:false offset_x:false frame:undefined =
     (
         format "\n"; print "PrintExporter_v._exportNode()"
 		format "this.params[#UNSMOOTH_VERTEX_COLOR]: %\n" this.params[#UNSMOOTH_VERTEX_COLOR]
-		--format "ExportNodePlugin: %\n" ExportNodePlugin
+		--format "ExportNode: %\n" ExportNode
 
+		
 		max create mode
 
-		export_path = this.getExportFilePath(ExportNodePlugin) frame:frame
+		export_path = this.getExportFilePath(ExportNode) frame:frame
 
-		export_node_children = ExportNodePlugin.getAllChildren()
+		export_node_children = ExportNode.getAllChildren()
+		
+		filename = getFilenameFile(export_path)
 		
 		select export_node_children
 		
+		/* OFFSET */ 
 		if offset_x then
-			this.offset.x = this._getOffsetByExportNodeWidth(ExportNodePlugin)(frame)
-			--this.offset.x += this._getOffsetByBaseobject(export_node_children)
-		format "this.offset.x: %\n" this.offset.x
+			this.offset.x = this._getOffsetByExportNodeWidth(ExportNode)(frame)
+
 		
 		/* ENABLE MODIFIERS */
 		if this.params[#MESHSMOOTH] then
@@ -228,6 +232,7 @@ struct PrintExporter_v
 		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
 		export_copies = this._getCopyOfExportObjects(export_node_children)
 		
+		this._moveToExportPosition(export_copies)(filename)(ExportNode)
 		
 		/* GET SOURCE OBJECTS OF EXPORTED OBJECTS */ 
 		source_objects = this._excludeObjects(export_node_children)
@@ -246,7 +251,7 @@ struct PrintExporter_v
 		if keep_exported then
 		(
 			format "EXPORT_SOURCES.COUNT: %\n" source_objects.count
-			PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:(getFilenameFile(export_path))
+			PrintPostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
 
 			/* RENAME OBJECTS BY EXPORT FILENAME */ 
 			for i = 1 to source_objects.count do
@@ -292,9 +297,54 @@ struct PrintExporter_v
 			append this.exported_paths export_path
 	),
 	
+	/** Get copy of export objects
+	 */
+	function _getCopyOfExportObjects export_source =
+	(
+		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
+
+		export_clones = #()
+		
+		/* CLONE NODES FOR EXPORT */ 
+		maxOps.CloneNodes export_source expandHierarchy:true newNodes:&export_clones --offset:this.offset
+    
+
+        this._removeAnimationFromExportedObjects(export_clones)
+
+		/* COLLAPSE CLONES */ 
+		for obj in export_clones do
+			convertTo obj PolyMeshObject
+		
+		for i = 1 to export_clones.count do
+		(
+			export_clones[i].parent = undefined
+			
+			export_clones[i].name = export_source[i].name + "-EXPORTING"
+			--export_clones[i].name = "export_copy"
+		)
+		
+		export_clones --return
+	),
+	
+    /** Move to export position
+     */
+    function _moveToExportPosition export_clones filename ExportNode =
+	(
+		--format "\n"; print "PrintExporter_v._moveToExportPosition()"
+			
+		/* OFFSET OBJECTS BY FRAME NUMBER */ 
+		move export_clones this.offset		
+		
+		ExportNodePlugin_offset = ExportNodePlugin name:filename text:filename export_dir:ExportNode.export_dir size:ExportNode.size pos:this.offset
+	
+		for export_clone in export_clones do
+			export_clone.parent = ExportNodePlugin_offset
+	
+	),
+	
 	/** Get export node width
 	 */
-	function _getOffsetByExportNodeWidth ExportNodePlugin frame =
+	function _getOffsetByExportNodeWidth ExportNode frame =
 	(
 		format "\n"; print "PrintExporter_v._getOffsetByExportNodeWidth()"
 		format "frame: %\n" frame
@@ -302,7 +352,7 @@ struct PrintExporter_v
 		
 		if frame != undefined and frame > 0 then 
 		(
-			bbox	= nodeGetBoundingBox ExportNodePlugin ( ExportNodePlugin.transform ) -- return array of min\max positions E.G.: bbox[1].z | bbox[2].z
+			bbox	= nodeGetBoundingBox ExportNode ( ExportNode.transform ) -- return array of min\max positions E.G.: bbox[1].z | bbox[2].z
 			
 			node_size = bbox[2].x - bbox[1].x 
 			
@@ -404,12 +454,12 @@ struct PrintExporter_v
 	
 	/** Save vertex colors
 	 */
-	function _saveVertexColors ExportNodePlugin =
+	function _saveVertexColors ExportNode =
 	(
 		--format "\n"; print "PrintExporter_v._saveVertexColors()"
 		--export_sources_get_colors = #()
 		
-		export_node_children = ExportNodePlugin.getAllChildren()
+		export_node_children = ExportNode.getAllChildren()
 		
 		source_objects = this._excludeObjects(export_node_children)
 		
@@ -436,9 +486,9 @@ struct PrintExporter_v
 	
 	/** Remove animation keys
 	 */
-	function _removeAnimationKeys export_clones =
+	function _removeAnimationFromExportedObjects export_clones =
 	(
-		--format "\n"; print "PrintExporter_v._removeAnimationKeys()"
+		--format "\n"; print "PrintExporter_v._removeAnimationFromExportedObjects()"
 		for obj in export_clones do
 		(
 			-- transform controllers: position, rotation, scale
@@ -449,38 +499,7 @@ struct PrintExporter_v
 		)
 	),
 	
-	/** Get copy of export objects
-	 */
-	function _getCopyOfExportObjects export_source =
-	(
-		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
-		--export_copies = #()
-		
-		/* CLONE NODES FOR EXPORT */ 
-		maxOps.CloneNodes export_source expandHierarchy:true newNodes:&export_clones --offset:this.offset
 
-		
-	this._removeAnimationKeys(export_clones)
-
-		/* COLLAPSE CLONES */ 
-		for obj in export_clones do
-			convertTo obj PolyMeshObject
-			
-		/* OFFSET OBJECTS BY FRAME NUMBER */ 
-		move export_clones this.offset		
-		
-		for i = 1 to export_clones.count do
-		(
-			export_clones[i].parent = undefined
-			
-			export_clones[i].name = export_source[i].name + "-EXPORTING"
-			--export_clones[i].name = "export_copy"
-		)
-
-		
-		export_clones --return
-	),
-	
 	/** Set exporter
 	 */
 	function _setExporter =
@@ -624,7 +643,7 @@ struct PrintExporter_v
 		--format "\n"; print "ExporterSetup_v._getLastKeyOfRotateAnimation()"
 		last_keyframe 	= 0
 
-		for ExportNodePlugin in this.ExportNodesToExport where (node_anim_keys = ExportNodePlugin.getAnimationKeys(controller_type) ).count > 0 do
+		for ExportNode in this.ExportNodesToExport where (node_anim_keys = ExportNode.getAnimationKeys(controller_type) ).count > 0 do
 			if node_anim_keys[node_anim_keys.count] > last_keyframe then  -- get last key if higher
 				last_keyframe = node_anim_keys[node_anim_keys.count]
 
@@ -632,7 +651,7 @@ struct PrintExporter_v
 	),
 
 
-	/** Export dir consist of CURRENT SCENE PATH + RELATIVE PATH of ExportNodePlugin.export_dir
+	/** Export dir consist of CURRENT SCENE PATH + RELATIVE PATH of ExportNode.export_dir
 	*
 	*/
 	function _getExportDir node_export_dir =

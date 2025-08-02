@@ -27,25 +27,6 @@ struct ExportNode_v
 		this._createNodeDialog()
 	),
 
-	/** _add to default layer
-	 */
-	function _addToLayer =
-	(
-		/* GET LAYER */ 
-		layer = LayerManager.getLayerFromName layer_name
-
-		/* CREATE LAYER */ 
-		if layer == undefined then
-			layer = LayerManager.newLayerFromName layer_name
-
-		/* ADD NODE */ 
-		layer.addnode _node
-
-		/* SET PROPERTIES */ 
-		layer.on = true
-	),
-
-
 	/** Ask name dialog
 	 */
 	function _createNodeDialog =
@@ -111,7 +92,25 @@ struct ExportNode_v
 		else
 			this._exception() --return
 	),
+	
+	/** _add to default layer
+	 */
+	function _addToLayer =
+	(
+		/* GET LAYER */ 
+		layer = LayerManager.getLayerFromName layer_name
 
+		/* CREATE LAYER */ 
+		if layer == undefined then
+			layer = LayerManager.newLayerFromName layer_name
+
+		/* ADD NODE */ 
+		layer.addnode _node
+
+		/* SET PROPERTIES */ 
+		layer.on = true
+	),
+	
 	/** Link selected obejcts to node
 	  *
 	  * Only objects without parent are linked, hierarchy will be kept
