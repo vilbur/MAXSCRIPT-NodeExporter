@@ -119,16 +119,6 @@ struct PrintExporter_v
 	(
 		format "\n"; print "PrintExporter_v.export()"
 		format "\n-----------\nDICTIONARY:params:%\n" params; for data_pair in params do format "%:	%\n" data_pair.key data_pair.value
-
-		if params[#ANIMATION] and not queryBox ("EXPORT ANIMATION ?\n\n FRAMES: " + (amin export_keys) as string +" - "+ (amax export_keys) as string ) title:"EXPORT ANIMATION"  beep:false then
-			 return false
-		
-		/* CLOSE LAYER MANAGER BEFORE SELECTION */
-		if LayerManager.isDialogOpen() then
-			is_manager_open = LayerManager.closeDialog()
-		
-
-
 			
 		this._setExporter()
 
@@ -140,10 +130,22 @@ struct PrintExporter_v
 
 		export_keys = for export_key = current_time to end_time collect export_key 
 		
-
+		/* COMFIRM EXPORT ANIOMATION */ 
+		if params[#ANIMATION] and not queryBox ("EXPORT ANIMATION ?\n\n FRAMES: " + (amin export_keys) as string +" - "+ (amax export_keys) as string ) title:"EXPORT ANIMATION"  beep:false then
+			 return false
+		
+		
+		/* COMFIRM KEEP EXPORTED OBJECTS */ 
+		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
+		
+		
+		/* CLOSE LAYER MANAGER BEFORE SELECTION */
+		if LayerManager.isDialogOpen() then
+			is_manager_open = LayerManager.closeDialog()
+		
+		/* FIX POSTIION OF EXPORT */ 
 		this._fixExportPosition()
 		
-		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
 		
 		try(
 			/* SAVE VERTEX COLORS */ 
@@ -158,6 +160,7 @@ struct PrintExporter_v
 			(
 				ExportNodes_old  = #()
 				ExportNodes_new = #()
+				all_source_objects = #()
 				all_exported_objects = #()
 				
 				sliderTime = frame
@@ -168,10 +171,10 @@ struct PrintExporter_v
 				for ExportNode in this.ExportNodesToExport do
 				--for i = 1 to ExportNodesToExport.count do 
 				(
-					--ExportNode = ExportNodesToExport[i]
+					all_source_objects += ExportNode.getAllChildren() 
 					
 					/* get name of export node suffixed wtih current frame E.G.: "export-node" >>> "export-node-01" */
-					export_node_name = ExportNode.text + this._getFrameSuffix frame
+					export_node_name = ExportNode.text + (this._getFrameSuffix frame)
 					
 					/* get old export nodes and its chidren */
 					ExportNode_old = this._findExportNode(export_node_name)
@@ -179,11 +182,13 @@ struct PrintExporter_v
 					
 					/* IF OFFSET then find EXPORT POSITION: */
 					if params[#OFFSET] then
-						export_pos = if ExportNode_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth (ExportNode) (frame)
+						export_pos = if ExportNode_old != undefined then ExportNode_old.pos else this._getOffsetByExportNodeWidth (ExportNode) (frame)
 
-					/* make clones of export node and children ( DO NOT OFFSET ON COPY ) */
+					/* MAKE CLONES OF EXPORT NODE AND CHILDREN ( DO NOT OFFSET ON COPY ) */
 					ExportNode_new = this._cloneExportObjects ExportNode frame
 
+					ExportNode_new.text = export_node_name
+					
 					export_clones = ExportNode_new.getAllChildren() 
 					format "ExportNode_new: %\n" ExportNode_new
 					
@@ -227,64 +232,65 @@ struct PrintExporter_v
 				if keep_exported then
 				(
 					for i = 1 to ExportNodes_new.count do
-					(
-						ExportNode_old = ExportNodes_old[i]
-						ExportNode_new = ExportNodes_new[i]
-
-						objects_old = ExportNode_old.getAllChildren()
-						objects_new = ExportNode_new.getAllChildren()
-						
-						for exported_object in objects_new do
+						if ( ExportNode_old = ExportNodes_old[i] ) != undefined then
 						(
-							source_pointer = getUserPropVal exported_object "EXPORT_SOURCE"
 							
-							source_obj = this._getSourceObjectByPointer (source_pointer)
+							ExportNode_new = ExportNodes_new[i]
+	
+							objects_old = ExportNode_old.getAllChildren()
+							objects_new = ExportNode_new.getAllChildren()
 							
-							/*------------------------------------------------------------------------------
-								INHERIT FROM SOURCE OBJECT
-							--------------------------------------------------------------------------------*/
-							
-							/* PASTE UNSMOOTHED VERTEX COLORS */ 
-							if this.params[#UNSMOOTH_VERTEX_COLOR] then
-								this._pasteUnsmoothedVertexColors(vertex_colors_source[ source_pointer as string ])							
-							
-							
-							/* add exported suffix to object */							
-							if this.params[#EXPORTED_SUFFIX] != "" then
-								exported_object.name += "-" + this.params[#EXPORTED_SUFFIX]
-								
-								
-							/* SET INNER VERTS TO BLACK VERTEX COLOR */
-							if this.params[#INNER_BLACK] then
-								this._setBlackVertexColorToInnerVerts(exported_object)( all_exported_objects )		
-							
-								
-							/*------------------------------------------------------------------------------
-								INHERIT FROM OLD COPY
-							--------------------------------------------------------------------------------*/
-							
-							if exported_object_old != undefined then
+							for exported_object in objects_new do
 							(
-								/* COPY USER PROPERTIES TO NEW COPY */ 
-								if (user_prop_buffer = getUserPropBuffer exported_object_old) != undefined then
-									setUserPropBuffer exported_object user_prop_buffer
+								source_pointer = getUserPropVal exported_object "EXPORT_SOURCE"
 								
-								/* RELINK CHILDREN */ 
-								for child in exported_object_old.children() do
-									child.parent = exported_object
+								source_obj = this._getSourceObjectByPointer (all_source_objects)(source_pointer)
 								
-								/* ADD TO LAYER */ 
-								exported_object_old.layer.addNode exported_object
+								/*------------------------------------------------------------------------------
+									INHERIT FROM SOURCE OBJECT
+								--------------------------------------------------------------------------------*/
+								
+								/* PASTE UNSMOOTHED VERTEX COLORS */ 
+								if this.params[#UNSMOOTH_VERTEX_COLOR] then
+									this._pasteUnsmoothedVertexColors(vertex_colors_source[ source_pointer as string ])							
+								
+								
+								/* add exported suffix to object */							
+								if this.params[#EXPORTED_SUFFIX] != "" then
+									exported_object.name += "-" + this.params[#EXPORTED_SUFFIX]
+									
+									
+								/* SET INNER VERTS TO BLACK VERTEX COLOR */
+								if this.params[#INNER_BLACK] then
+									this._setBlackVertexColorToInnerVerts(exported_object)( all_exported_objects )		
+								
+									
+								/*------------------------------------------------------------------------------
+									INHERIT FROM OLD COPY
+								--------------------------------------------------------------------------------*/
+								
+								if exported_object_old != undefined then
+								(
+									/* COPY USER PROPERTIES TO NEW COPY */ 
+									if (user_prop_buffer = getUserPropBuffer exported_object_old) != undefined then
+										setUserPropBuffer exported_object user_prop_buffer
+									
+									/* RELINK CHILDREN */ 
+									for child in exported_object_old.children() do
+										child.parent = exported_object
+									
+									/* ADD TO LAYER */ 
+									exported_object_old.layer.addNode exported_object
+								)
+								else /* MOVE TO LAYER */ 
+									this._moveToLayer exported_object ExportNode_new.name
 							)
-							else /* MOVE TO LAYER */ 
-								this._moveToLayer exported_object ExportNode_new.name
+							
+							/* DELETE OLD CLONES */
+							delete (ExportNode_old.getAllChildren())
+							
+							delete ExportNode_old
 						)
-						
-						/* DELETE OLD CLONES */
-						delete (ExportNode_old.getAllChildren())
-						
-						delete ExportNode_old
-					)
 				)
 				/*------------------------------------------------------------------------------
 					DELETE EXPORTED COPIES
@@ -641,7 +647,7 @@ struct PrintExporter_v
 		--format "\n"; print "PrintExporter_v.getSourceObjectByPointer()"
 		source_obj = undefined
 
-		for obj in objs while obj == undefined where getUserPropVal obj "EXPORT_SOURCE" == pointer do 
+		for obj in objs while source_obj == undefined where getUserPropVal obj "EXPORT_SOURCE" == pointer do 
 			source_obj = obj
 
 		source_obj --return
