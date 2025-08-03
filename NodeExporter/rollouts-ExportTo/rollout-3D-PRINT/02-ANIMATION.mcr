@@ -13,7 +13,7 @@ icon:	"Control:checkbox|id:CBX_export_animation|ACROSS:2|offset:[ 16, 0 ]"
 	on execute do
 	(
 		
-		ROLLOUT_3d_print.CBX_offset.enabled   = eventFired.val
+		--ROLLOUT_3d_print.CBX_offset.enabled   = eventFired.val
 		--ROLLOUT_3d_print.CBX_keep_exp.enabled = eventFired.val
 		
 	)
