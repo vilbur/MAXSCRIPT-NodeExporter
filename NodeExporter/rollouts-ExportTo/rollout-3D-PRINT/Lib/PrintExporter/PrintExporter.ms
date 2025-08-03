@@ -1,6 +1,6 @@
 --filein( getFilenamePath(getSourceFileName()) + "/../PrinterVolume/PrinterVolume.ms" )	-- "./../PrinterVolume/PrinterVolume.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/PrintPostExporter/PrintPostExporter.ms" )	--"./PrintPostExporter/PrintPostExporter.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/PrintPostExporter/PrintPostExporter.ms" )	--"./PrintPostExporter/PrintPostExporter.ms"
 
 /** Print exporter
   *
@@ -55,9 +55,11 @@ struct PrintExporter_v
 	Exporter,
 	PostExporter,
 
+	/* store */ 	
 	/* reference */
 	/* inhered */
 
+	
 	/** Export
 		
 		- Get nodes and animation frames to export
@@ -80,8 +82,9 @@ struct PrintExporter_v
 			
 			- make clones of export node and children ( DO NOT OFFSET ON COPY )
 			- reset names of clones
-			- suffix obejct names by frame number 
+			- suffix object names by frame number 
 			- collapse clones to editable poly
+			- remove animation keys
 			- move export node to export position
 			
 			- exclude and delete not exported objects from node
@@ -95,33 +98,39 @@ struct PrintExporter_v
 		
 		3) POST EXPORT
 		---------------------------------------------------------------------------------------------------------------------------
-			- Inherit from old exported objects:
-				A) user props
-				B) children of objects ( 3D print suports )
-			
-			
-			IF KEEP EXPORT
+			IF #KEEP_EXPORTED:
 				- move objects to layers ( use old exported layers or create new layers )
 				- paste unsmoothed vertex colors from source objects
 				- set inner verts to black vertex color
+				- add exported suffix to object				
+				- Inherit from old exported objects:
+					A) user props
+					B) children of objects ( 3D print suports )
+					C) layer
+
 			
 	  
-			IF NOT KEEP EXPORT:
+			IF NOT #KEEP_EXPORTED:
 				- delete exported objects
 	  
 			- delete old clones
-		
-		
-		
 	 */
 	function export =
 	(
 		format "\n"; print "PrintExporter_v.export()"
 		format "\n-----------\nDICTIONARY:params:%\n" params; for data_pair in params do format "%:	%\n" data_pair.key data_pair.value
 
-		--if LayerManager.isDialogOpen() then
-			--LayerManager.closeDialog()
+		if params[#ANIMATION] and not queryBox ("EXPORT ANIMATION ?\n\n FRAMES: " + (amin export_keys) as string +" - "+ (amax export_keys) as string ) title:"EXPORT ANIMATION"  beep:false then
+			 return false
+		
+		/* CLOSE LAYER MANAGER BEFORE SELECTION */
+		if LayerManager.isDialogOpen() then
+			is_manager_open = LayerManager.closeDialog()
+		
 
+		ExportNodes_old  = #()
+		ExportNodes_new = #()
+			
 		this._setExporter()
 
 		this._holdMaxState()
@@ -132,12 +141,7 @@ struct PrintExporter_v
 
 		export_keys = for export_key = current_time to end_time collect export_key 
 		
-		if params[#ANIMATION] and not queryBox ("EXPORT ANIMATION ?\n\n FRAMES: " + (amin export_keys) as string +" - "+ (amax export_keys) as string ) title:"EXPORT ANIMATION"  beep:false then
-			 return false
-			 --params[#ANIMATION] = false
-		
-		format "EXPORT_KEYS: %\n" export_keys
-		
+
 		this._fixExportPosition()
 		
 		keep_exported = params[#KEEP_EXPORTED] and queryBox ("Keep copies of exported objects ?") title:"PrintExporter_v"
@@ -148,75 +152,151 @@ struct PrintExporter_v
 				for export_node in this.ExportNodesToExport do
 					this._saveVertexColors (export_node)
 			
-			
+			/*------------------------------------------------------------------------------
+				FOR EACH FRAME
+			--------------------------------------------------------------------------------*/
 			for frame in export_keys do 
 			(
-				format "frame: %\n" frame
-				this._setTimeSlider (frame)
-				
-				/*------------------------------------------------------------------------------
-					EXPORT NODES
-				--------------------------------------------------------------------------------*/
-				for selected_node in this.ExportNodesToExport do
+				all_exported_objects = #()
+
+				sliderTime = frame
+
+				/*==============================================================================
+					PREPARE FOR EXPORT
+				================================================================================*/
+				for ExportNode in this.ExportNodesToExport do
+				--for i = 1 to ExportNodesToExport.count do 
 				(
-					--export_node = if not keep_exported then selected_node else this._cloneExportObjects selected_node offset_x:this.params[#OFFSET] frame:frame
-					export_node_copy = this._cloneExportObjects selected_node offset_x:this.params[#OFFSET] frame:frame
-			
-					/*------------------------------------------------------------------------------
-						EXPORT NODE
-					--------------------------------------------------------------------------------*/
-					this._exportNode (export_node_copy) --frame:frame --offset_x:this.params[#OFFSET] frame:frame keep_exported:keep_exported
+					--ExportNode = ExportNodesToExport[i]
 					
-					if keep_exported then
-					(
-						--PostExporter = PrintPostExporter_v exported_objects:exported_objects filename:filename
+					/* get name of export node suffixed wtih current frame E.G.: "export-node" >>> "export-node-01" */
+					export_node_name = ExportNode.text + this._getFrameSuffix frame
+					
+					/* get old export nodes and its chidren */
+					ExportNode_old = this._findExportNode(export_node_name)
+					
+					
+					/* IF OFFSET then find EXPORT POSITION: */
+					if params[#OFFSET] then
+						export_pos = if ExportNode_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth (ExportNode) (frame)
 
-						export_node_children = export_node_copy.getAllChildren()
+					/* make clones of export node and children ( DO NOT OFFSET ON COPY ) */
+					export_clones = this._cloneExportObjects ExportNode frame
 
-						excluded_objects = this._getExcludeObjects(export_node_children)
+					ExportNode_new = this._getExportNode(export_clones) 
 
-
-						PostExporter = PrintPostExporter_v exported_objects:export_node_children
-						--PostExporter = PrintPostExporter_v()
+					/* move export node to export position */
+					if export_pos != undefined then 
+						ExportNode_new.pos = export_pos
 					
-						PostExporter.moveToLayer export_node_copy.text
+					/* exclude and delete not exported objects from node */
+					excluded_objects = this._getExcludeObjects(export_clones)
+					
+					delete excluded_objects
+					
+					/* remove deleted nodes */ 
+					--export_clones = for obj in export_clones where not isValidNode obj collect obj
+					
+					/* relink objects to node - fix hierarchy after exclude ( in case of any excluded objects is in hierarchy between objects and node ) */
+					for export_clone in export_clones where isValidNode export_clone do
+						export_clone.parent = ExportNode_new
 					
 					
-						for exported_object in export_node_children where isValidNode exported_object do
-						(
-							PostExporter.exported_object = exported_object
-					
-							exported_object.parent = export_node_copy
-							
-							source_pointer = getUserPropVal exported_object "EXPORT_SOURCE" asString:true
-								
-							/* COPY VERTEX COLOR */ 
-							if this.params[#UNSMOOTH_VERTEX_COLOR] then
-								PostExporter.copyVertexColors(vertex_colors_source[source_pointer])
-							
-							if this.params[#INNER_BLACK] then
-								PostExporter.setBlackVertexColorToInnerVerts()							
-	
-							
-							if this.params[#EXPORTED_SUFFIX] != "" then
-								exported_object.name += "-" + this.params[#EXPORTED_SUFFIX]
-
-						)
-					
-						delete excluded_objects
-					)
-					else
-					(
-						delete (export_node_copy.getAllChildren())
-						
-						delete export_node_copy
-					)
-					
+					append ExportNodes_old ExportNode_old
+					append ExportNodes_new ExportNode_new
 					
 				)
-			)
+				
+				/*==============================================================================
+					EXPORT ALL NODES ON FRAME
+				================================================================================*/
+				for ExportNode in this.ExportNodes_new do
+				(
+					this._exportNode (ExportNode) --frame:frame --offset_x:this.params[#OFFSET] frame:frame keep_exported:keep_exported
+					
+					all_exported_objects += ExportNode.getAllChildren()
+				)
 
-			
+					
+				
+				/*==============================================================================
+					POST EXPORT
+				================================================================================*/
+				if keep_exported then
+				(
+					for i = 1 to ExportNodes_new.count do
+					(
+						ExportNode_old = ExportNodes_old[i]
+						ExportNode_new = ExportNodes_new[i]
+
+						objects_old = ExportNode_old.getAllChildren()
+						objects_new = ExportNode_new.getAllChildren()
+						
+						for exported_object in objects_new do
+						(
+							source_pointer = getUserPropVal exported_object "EXPORT_SOURCE"
+							
+							source_obj = this._getSourceObjectByPointer (source_pointer)
+							
+							/*------------------------------------------------------------------------------
+								INHERIT FROM SOURCE OBJECT
+							--------------------------------------------------------------------------------*/
+							
+							/* PASTE UNSMOOTHED VERTEX COLORS */ 
+							if this.params[#UNSMOOTH_VERTEX_COLOR] then
+								this._pasteUnsmoothedVertexColors(vertex_colors_source[ source_pointer as string ])							
+							
+							
+							/* add exported suffix to object */							
+							if this.params[#EXPORTED_SUFFIX] != "" then
+								exported_object.name += "-" + this.params[#EXPORTED_SUFFIX]
+								
+								
+							/* SET INNER VERTS TO BLACK VERTEX COLOR */
+							if this.params[#INNER_BLACK] then
+								this._setBlackVertexColorToInnerVerts(exported_object)( all_exported_objects )		
+							
+								
+							/*------------------------------------------------------------------------------
+								INHERIT FROM OLD COPY
+							--------------------------------------------------------------------------------*/
+							
+							if exported_object_old != undefined then
+							(
+								/* COPY USER PROPERTIES TO NEW COPY */ 
+								if (user_prop_buffer = getUserPropBuffer exported_object_old) != undefined then
+									setUserPropBuffer exported_object user_prop_buffer
+								
+								/* RELINK CHILDREN */ 
+								for child in exported_object_old.children() do
+									child.parent = exported_object
+								
+								/* ADD TO LAYER */ 
+								exported_object_old.layer.addNode exported_object
+							)
+							else /* MOVE TO LAYER */ 
+								this._moveToLayer exported_object ExportNode_new.name
+						)
+						
+						/* DELETE OLD CLONES */
+						delete (ExportNode_old.getAllChildren())
+						
+						delete ExportNode_old
+					)
+				)
+				/*------------------------------------------------------------------------------
+					DELETE EXPORTED COPIES
+				--------------------------------------------------------------------------------*/
+				else
+				(
+					for ExportNode in this.ExportNodes_new do
+					(
+						delete (ExportNode.getAllChildren())
+						
+						delete ExportNode
+					)
+				)
+			)
 			
 			this._setSuccessMessage()
 
@@ -224,9 +304,14 @@ struct PrintExporter_v
 
 			delete this.fix_position_dummy
 
-			this._setTimeSlider (current_time)
+			sliderTime = current_time
+		
+			/* REOPEN LAYER MANAGER */
+			if is_manager_open != undefined then
+				LayerManager.editLayerByName ""
 		
 			this._successMessage()
+			
 
 		)catch(
 
@@ -312,7 +397,7 @@ struct PrintExporter_v
 
 				
 		/* EXPORTED OBJECTS */ 
-		export_objects = this._excludeObjects(export_node_children)
+		--export_objects = this._excludeObjects(export_node_children)
 		
 		/*------------------------------------------------------------------------------
 			EXPORT
@@ -325,60 +410,83 @@ struct PrintExporter_v
 			append this.exported_paths export_path
 	),
 	
-	/** 
-	  *	
-	  */
-	function _cloneExportObjects ExportNode  offset_x:false frame:undefined =
-    (
-        format "\n"; print "PrintExporter_v._cloneExportObjects()"
-		--max create mode
-        --export_node_children = ExportNode.getAllChildren()
-		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
-		export_clones = this._getCopyOfExportObjects(ExportNode)(frame)
-		
-		ExportNode_clone = this._getClonedExportNode (export_clones)
-	
-		ExportNode_clone.text = ExportNode.text + this._getFrameSuffix frame
-		
-		ExportNodePlugin_old = this._getOldExportNode ExportNode_clone.text	
-		
-		
-		/*------------------------------------------------------------------------------
-			MOVE NODE TO EXPORT POSITION
-		--------------------------------------------------------------------------------*/
-		ExportNode_clone.pos = if ExportNodePlugin_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth ExportNode frame
-		
-		
-		/* INHERIT PARAMETERS FROM OLD NODE */ 
-		if ExportNodePlugin_old != undefined then
-		(
-			ExportNode_clone.wirecolor = ExportNodePlugin_old.wirecolor
-
-			old_clones = ExportNodePlugin_old.getAllChildren()
-			
-			--/* COPY USER PROPERTIES TO NEW COPY */ 
-			--for export_clone in export_clones do
-			--	for old_clone in old_clones where export_clone.name == old_clone.name do
-			--		if (user_prop_buffer = getUserPropBuffer old_clone) != undefined then
-			--			setUserPropBuffer export_clone user_prop_buffer
-			
-			delete old_clones
-			
-			delete ExportNodePlugin_old
-		)
-		
-		ExportNode_clone --return
-	),
+--	/**  make clones of export node and children
+--	  
+--		• reset names of clones
+--		• suffix object names by frame number 
+--		• collapse clones to editable poly
+--		
+--	  */
+--	function _cloneExportObjects ExportNode  offset_x:false frame:undefined =
+--    (
+--        format "\n"; print "PrintExporter_v._cloneExportObjects()"
+--		--max create mode
+--        --export_node_children = ExportNode.getAllChildren()
+--		/* COPY EVEN EXCLUDED OBJECTS because of keep hierarchy */ 
+--	    export_clones = this._cloneExportObjects(ExportNode)(frame)
+--		
+--		ExportNode_clone = this._getClonedExportNode (export_clones)
+--	
+--		ExportNode_clone.text = ExportNode.text + this._getFrameSuffix frame
+--		
+--		ExportNodePlugin_old = this._getOldExportNode ExportNode_clone.text	
+--		
+--		
+--		/*------------------------------------------------------------------------------
+--			MOVE NODE TO EXPORT POSITION
+--		--------------------------------------------------------------------------------*/
+--		ExportNode_clone.pos = if ExportNodePlugin_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth ExportNode frame
+--		
+--		
+--		/* INHERIT PARAMETERS FROM OLD NODE */ 
+--		if ExportNodePlugin_old != undefined then
+--		(
+--			ExportNode_clone.wirecolor = ExportNodePlugin_old.wirecolor
+--
+--			old_clones = ExportNodePlugin_old.getAllChildren()
+--			
+--			--/* COPY USER PROPERTIES TO NEW COPY */ 
+--			--for export_clone in export_clones do
+--			--	for old_clone in old_clones where export_clone.name == old_clone.name do
+--			--		if (user_prop_buffer = getUserPropBuffer old_clone) != undefined then
+--			--			setUserPropBuffer export_clone user_prop_buffer
+--			
+--			delete old_clones
+--			
+--			delete ExportNodePlugin_old
+--		)
+--		
+--		ExportNode_clone --return
+--	),
 	
 	/** Get copy of export objects
+	  
+		• reset names of clones
+		• suffix object names by frame number 
+		• collapse clones to editable poly
+		• remove animation keys
+	  
 	 */
-	function _getCopyOfExportObjects ExportNode frame =
+	function _cloneExportObjects ExportNode frame =
 	(
-		--format "\n"; print "PrintExporter_v._getCopyOfExportObjects()"
-
+		--format "\n"; print "PrintExporter_v._cloneExportObjects()"
+		/** Remove animation keys
+		 */
+		function _removeAnimationFromExportedObjects export_clones =
+		(
+			--format "\n"; print "PrintExporter_v._removeAnimationFromExportedObjects()"
+			for obj in export_clones do
+			(
+				-- transform controllers: position, rotation, scale
+				track_list = #(obj.position.controller, obj.rotation.controller, obj.scale.controller)
+		
+				for ctrl in track_list do
+					deleteKeys track_list #allKeys
+			)
+		)
+	
 		source_objects = #()
 		export_clones = #()
-		
 		
 		/* CLONE NODES FOR EXPORT */ 
 		maxOps.CloneNodes ExportNode expandHierarchy:true actualNodeList:&source_objects newNodes:&export_clones --offset:offset
@@ -388,52 +496,117 @@ struct PrintExporter_v
 		for obj in export_clones  where classOf obj != ExportNodePlugin do
 			convertTo obj PolyMeshObject
 
-
+		/* ADJUST CLONES */ 
 		for i = 1 to export_clones.count do
 		(
 			/* RENAME OBJECTS */ 
 			export_clones[i].name = source_objects[i].name + (this._getFrameSuffix frame)
-
 			
 			/* SAVE SOURCE OBJECT POINTER TO USER OF OBJECT COPY */ 
-			setUserPropVal export_clones[i] "EXPORT_SOURCE" ( getHandleByAnim source_objects[i] ) asString:true
+			setUserPropVal export_clones[i] "EXPORT_SOURCE" ( getHandleByAnim source_objects[i] ) --asString:true
 		)
 		
-        this._removeAnimationFromExportedObjects(export_clones)
-		
+		/* REMOVE ANIMATION KEYS */ 
+		_removeAnimationFromExportedObjects(export_clones)
+
 		export_clones --return
 	),
 	
-	/** Get cloned export node
+	/** Find export node in scene
 	 */
-	function _getClonedExportNode export_clones =
+	function _findExportNode export_node_name search_in:shapes =
 	(
-		--format "\n"; print "PrintExporter_v._getClonedExportNode()"
-		ExportNode_clone = undefined 
-
-		for export_clone in export_clones where classOf export_clone == ExportNodePlugin do
-			ExportNode_clone = export_clone
-			
-		ExportNode_clone --return
+		--format "\n"; print "PrintExporter_v._findExportNode()"
+		found_node = undefined
+		
+		for obj in search_in while found_node == undefined where classOf obj == ExportNodePlugin and obj.name == export_node_name do
+			found_node = obj
+		
+		found_node --return
 	),
 	
 	/** Get old ecport node
 	 */
-	function _getOldExportNode export_node_name =
+	function _getExportNode objs =
 	(
-		--format "\n"; print "PrintExporter_v._getOldExportNode()"
-		ExportNodePlugin_old = undefined
+		found_node = undefined
 		
-		if ( same_name_objects = getNodeByName export_node_name all:true ).count > 0 then
-        (
-            for same_name_object in same_name_objects where classOf same_name_object == ExportNodePlugin do
-                ExportNodePlugin_old = same_name_object
-			format "ExportNodePlugin_old: %\n" ExportNodePlugin_old
-		)
+		for obj in objs while found_node == undefined where classOf obj == ExportNodePlugin do
+			found_node = obj
 		
-		ExportNodePlugin_old --return
+		found_node --return
 	),
 
+	/** Paste unsmoothed vertex colors
+	 */
+	function _pasteUnsmoothedVertexColors verts_by_colors =
+	(
+		format "\n"; print "PrintPostExporter_v._pasteUnsmoothedVertexColors()"
+		format "VERTS_BY_COLORS: %\n" verts_by_colors
+		--any_color_exists
+		
+		--if not (verts_by_colors.keys.count == 1 and verts_by_colors.keys[1] == white as string) then
+		if verts_by_colors != undefined then 
+			for vert_color in verts_by_colors.keys where not verts_by_colors[vert_color].isEmpty do
+				polyop.setVertColor exported_object.baseobject 0 verts_by_colors[vert_color]  ( execute vert_color )
+	),
+	
+	/** Set black vertex color to inner verts
+	 */
+	function _setBlackVertexColorToInnerVerts exported_object exported_objects =
+	(
+		format "\n"; print "PrintPostExporter_v._setBlackVertexColorToInnerVerts()"
+		--format "exported_objects: %\n" exported_objects
+		black_verts = #{}
+		
+		/* TEST IF VERTEX COLORS ARE SUPPORTED */ 
+		has_vertex_color_map_channel = polyop.getMapSupport exported_object 0
+
+		/* GET BLAVK VERTS */ 
+		if has_vertex_color_map_channel then
+			black_verts = polyop.getVertsByColor exported_object black 0.0 0.0 0.0
+		
+		/* GET IINER VERTS */ 
+		inner_verts = getInternalVertsOfObject exported_object exported_objects verts:-black_verts
+		
+		/* SET INNER VERTS AS BLACK */ 
+		if not inner_verts.isEmpty then
+		(
+			/* ENABLE VERTEX COLORS */ 
+			if not has_vertex_color_map_channel then
+				polyop.setMapSupport exported_object 0 true
+			
+			/* SET VERTEX COLOR */ 
+			polyop.setVertColor exported_object.baseobject 0 inner_verts black
+		)
+	),
+	
+	
+	/** Move to layer
+	 */
+	function _moveToLayer exported_object layer_name =
+	(
+		format "\n"; print "PrintPostExporter_v._moveToLayer()"
+		top_layer_name =  "--- EXPORTED ---"
+		
+		/* GET LAYER */ 
+		exported_layer = LayerManager.getLayerFromName layer_name
+		
+		/* CREATE LAYER */ 
+		if exported_layer == undefined then
+		(
+			if (parent_layer = LayerManager.getLayerFromName top_layer_name) == undefined then
+				parent_layer = LayerManager.newLayerFromName top_layer_name
+				
+				
+			exported_layer = LayerManager.newLayerFromName layer_name
+			
+			exported_layer.setParent parent_layer
+		)
+		
+		/* ADD NODE TO LAYER */ 
+		exported_layer.addnode  exported_object
+	),
 	
 	/** Get export node width
 	 */
@@ -454,6 +627,19 @@ struct PrintExporter_v
 		)
 		
 		offset --return
+	),
+	
+	/** Get source object by pointer
+	 */
+	function _getSourceObjectByPointer objs pointer =
+	(
+		--format "\n"; print "PrintExporter_v.getSourceObjectByPointer()"
+		source_obj = undefined
+
+		for obj in objs while obj == undefined where getUserPropVal obj "EXPORT_SOURCE" == pointer do 
+			source_obj = obj
+
+		source_obj --return
 	),
 	
 	/** Get frame suffix
@@ -506,20 +692,7 @@ struct PrintExporter_v
 		delete export_sources_get_colors
 	),
 	
-	/** Remove animation keys
-	 */
-	function _removeAnimationFromExportedObjects export_clones =
-	(
-		--format "\n"; print "PrintExporter_v._removeAnimationFromExportedObjects()"
-		for obj in export_clones do
-		(
-			-- transform controllers: position, rotation, scale
-			track_list = #(obj.position.controller, obj.rotation.controller, obj.scale.controller)
-	
-			for ctrl in track_list do
-				deleteKeys track_list #allKeys
-		)
-	),
+
 	
 
 	/** Set exporter
@@ -562,7 +735,7 @@ struct PrintExporter_v
 		if this.fetch_state[#layer_manager_open] then
 			macros.run "Layers" "LayerManager"
 
-		sliderTime = this._getLastAnimKey()
+		--sliderTime = this._getLastAnimKey()
 	),
 
 	/** Open exported files
@@ -612,32 +785,32 @@ struct PrintExporter_v
 		)
 	),
 
-	/** Move time slider to last key, if export nodes has animated position or rotastion
-     *
-     *
-     */
-    function _setExportLastKeyFrame =
-	(
-		--format "\n"; print "PrintExporter_v._setExportLastKeyFrame()"
-		this.anim_keys[#position]	= this._getLastKeyOfAnimation(#position)
-		this.anim_keys[#rotation]	= this._getLastKeyOfAnimation(#rotation)
-
-		this._setTimeSlider(this._getLastAnimKey())
-	),
+--	/** Move time slider to last key, if export nodes has animated position or rotastion
+--     *
+--     *
+--     */
+--    function _setExportLastKeyFrame =
+--	(
+--		--format "\n"; print "PrintExporter_v._setExportLastKeyFrame()"
+--		this.anim_keys[#position]	= this._getLastKeyOfAnimation(#position)
+--		this.anim_keys[#rotation]	= this._getLastKeyOfAnimation(#rotation)
+--
+--		this._setTimeSlider(this._getLastAnimKey())
+--	),
 	
-	/** Get last anim key
-	 */
-	function _getLastAnimKey =
-	(
-		--format "\n"; print "PrintExporter_v._getLastAnimKey()"
-
-		anim_key_values = for data_pair in anim_keys where data_pair.value != 0 collect data_pair.value
-
-		if anim_key_values.count > 0 then
-			amax anim_key_values --return
-		else
-			0 --return
-	),
+	--/** Get last anim key
+	-- */
+	--function _getLastAnimKey =
+	--(
+	--	--format "\n"; print "PrintExporter_v._getLastAnimKey()"
+	--
+	--	anim_key_values = for data_pair in anim_keys where data_pair.value != 0 collect data_pair.value
+	--
+	--	if anim_key_values.count > 0 then
+	--		amax anim_key_values --return
+	--	else
+	--		0 --return
+	--),
 
     /** create boxes in corners of print plane to keep exported position
      */
@@ -652,23 +825,24 @@ struct PrintExporter_v
 			#()
 	),
 
-	/** Check if selected nodes has animation keys
-	  *
-	  * @param name controller_type #position|#rotation|#scale
-	  *
-	  * @return integer of last key of animation
-	 */
-	function _getLastKeyOfAnimation controller_type =
-	(
-		--format "\n"; print "ExporterSetup_v._getLastKeyOfRotateAnimation()"
-		last_keyframe 	= 0
 
-		for ExportNode in this.ExportNodesToExport where (node_anim_keys = ExportNode.getAnimationKeys(controller_type) ).count > 0 do
-			if node_anim_keys[node_anim_keys.count] > last_keyframe then  -- get last key if higher
-				last_keyframe = node_anim_keys[node_anim_keys.count]
-
-		last_keyframe --return
-	),
+	--/** Check if selected nodes has animation keys
+	--  *
+	--  * @param name controller_type #position|#rotation|#scale
+	--  *
+	--  * @return integer of last key of animation
+	-- */
+	--function _getLastKeyOfAnimation controller_type =
+	--(
+	--	--format "\n"; print "ExporterSetup_v._getLastKeyOfRotateAnimation()"
+	--	last_keyframe 	= 0
+	--
+	--	for ExportNode in this.ExportNodesToExport where (node_anim_keys = ExportNode.getAnimationKeys(controller_type) ).count > 0 do
+	--		if node_anim_keys[node_anim_keys.count] > last_keyframe then  -- get last key if higher
+	--			last_keyframe = node_anim_keys[node_anim_keys.count]
+	--
+	--	last_keyframe --return
+	--),
 
 
 	/** Export dir consist of CURRENT SCENE PATH + RELATIVE PATH of ExportNode.export_dir
@@ -679,21 +853,21 @@ struct PrintExporter_v
 		maxFilePath + (trimLeft node_export_dir ".\\")
 	),
 
-	/** Set time slider
-	 */
-	function _setTimeSlider keyframe =
-	(
-		--format "\n"; print "ExporterSetup_v.setTimeSlider()"
-		sliderTime = keyframe
-
-		
-		--current_keyframe	= (( sliderTime ) as string ) as integer
-
-		/* MOVE TIME SLIDER */
-		--if current_keyframe != keyframe then
-		--	if queryBox ("Exported nodes has animation of rotation.\n\nWould you like to export key "+keyframe as string +" ?" ) title:"Export animation key"  beep:false then
-		--		sliderTime = keyframe
-	),
+	--/** Set time slider
+	-- */
+	--function _setTimeSlider keyframe =
+	--(
+	--	--format "\n"; print "ExporterSetup_v.setTimeSlider()"
+	--	sliderTime = keyframe
+	--
+	--	
+	--	--current_keyframe	= (( sliderTime ) as string ) as integer
+	--
+	--	/* MOVE TIME SLIDER */
+	--	--if current_keyframe != keyframe then
+	--	--	if queryBox ("Exported nodes has animation of rotation.\n\nWould you like to export key "+keyframe as string +" ?" ) title:"Export animation key"  beep:false then
+	--	--		sliderTime = keyframe
+	--),
 
 
 	/** Get open in program path
