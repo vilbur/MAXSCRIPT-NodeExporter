@@ -128,8 +128,7 @@ struct PrintExporter_v
 			is_manager_open = LayerManager.closeDialog()
 		
 
-		ExportNodes_old  = #()
-		ExportNodes_new = #()
+
 			
 		this._setExporter()
 
@@ -157,8 +156,10 @@ struct PrintExporter_v
 			--------------------------------------------------------------------------------*/
 			for frame in export_keys do 
 			(
+				ExportNodes_old  = #()
+				ExportNodes_new = #()
 				all_exported_objects = #()
-
+				
 				sliderTime = frame
 
 				/*==============================================================================
@@ -181,17 +182,18 @@ struct PrintExporter_v
 						export_pos = if ExportNode_old != undefined then ExportNodePlugin_old.pos else this._getOffsetByExportNodeWidth (ExportNode) (frame)
 
 					/* make clones of export node and children ( DO NOT OFFSET ON COPY ) */
-					export_clones = this._cloneExportObjects ExportNode frame
+					ExportNode_new = this._cloneExportObjects ExportNode frame
 
-					ExportNode_new = this._getExportNode(export_clones) 
-
+					export_clones = ExportNode_new.getAllChildren() 
+					format "ExportNode_new: %\n" ExportNode_new
+					
 					/* move export node to export position */
 					if export_pos != undefined then 
 						ExportNode_new.pos = export_pos
 					
 					/* exclude and delete not exported objects from node */
 					excluded_objects = this._getExcludeObjects(export_clones)
-					
+					format "EXCLUDED_OBJECTS: %\n" excluded_objects
 					delete excluded_objects
 					
 					/* remove deleted nodes */ 
@@ -210,13 +212,13 @@ struct PrintExporter_v
 				/*==============================================================================
 					EXPORT ALL NODES ON FRAME
 				================================================================================*/
-				for ExportNode in this.ExportNodes_new do
+				for ExportNode in ExportNodes_new do
 				(
 					this._exportNode (ExportNode) --frame:frame --offset_x:this.params[#OFFSET] frame:frame keep_exported:keep_exported
 					
-					all_exported_objects += ExportNode.getAllChildren()
+					--all_exported_objects += (ExportNode.getAllChildren())
+					all_exported_objects = join all_exported_objects (ExportNode.getAllChildren())
 				)
-
 					
 				
 				/*==============================================================================
@@ -289,7 +291,7 @@ struct PrintExporter_v
 				--------------------------------------------------------------------------------*/
 				else
 				(
-					for ExportNode in this.ExportNodes_new do
+					for ExportNode in ExportNodes_new do
 					(
 						delete (ExportNode.getAllChildren())
 						
@@ -386,23 +388,25 @@ struct PrintExporter_v
 
 		export_path = this.getExportFilePath(ExportNode) --frame:frame
 
-		export_node_children = ExportNode.getAllChildren()
+		export_objects = ExportNode.getAllChildren()
 				
-		select export_node_children
+		--select export_node_children
 			
 		/* ENABLE MODIFIERS */
 		if this.params[#MESHSMOOTH] then
-            for obj in export_node_children where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
+            for obj in export_objects where ( _mod = obj.modifiers[ meshsmooth ]) != undefined do
                 _mod.enabled = true
 
 				
 		/* EXPORTED OBJECTS */ 
-		--export_objects = this._excludeObjects(export_node_children)
+		--export_objects = this._excludeObjects(export_objects)
 		
-		/*------------------------------------------------------------------------------
+		/*==============================================================================
 			EXPORT
-		--------------------------------------------------------------------------------*/
+		================================================================================*/
 		export_result = Exporter.export ( export_objects + this.fix_position_dummy ) (export_path)
+		--format "FIX_POSITION_DUMMY: %\n" fix_position_dummy
+		--export_result = Exporter.export ( export_objects  ) (export_path)
 		
 
 		/* APPEND EXPORT PATH TO OTHER PATHS */
@@ -465,11 +469,24 @@ struct PrintExporter_v
 		• suffix object names by frame number 
 		• collapse clones to editable poly
 		• remove animation keys
-	  
+		
+		@return copy of export node
 	 */
 	function _cloneExportObjects ExportNode frame =
 	(
 		--format "\n"; print "PrintExporter_v._cloneExportObjects()"
+		/** Get old ecport node
+		 */
+		function getExportNode objs =
+		(
+			found_node = undefined
+			
+			for obj in objs while found_node == undefined where classOf obj == ExportNodePlugin do
+				found_node = obj
+			
+			found_node --return
+		)
+		
 		/** Remove animation keys
 		 */
 		function _removeAnimationFromExportedObjects export_clones =
@@ -509,7 +526,7 @@ struct PrintExporter_v
 		/* REMOVE ANIMATION KEYS */ 
 		_removeAnimationFromExportedObjects(export_clones)
 
-		export_clones --return
+		getExportNode (export_clones) --return
 	),
 	
 	/** Find export node in scene
@@ -525,18 +542,6 @@ struct PrintExporter_v
 		found_node --return
 	),
 	
-	/** Get old ecport node
-	 */
-	function _getExportNode objs =
-	(
-		found_node = undefined
-		
-		for obj in objs while found_node == undefined where classOf obj == ExportNodePlugin do
-			found_node = obj
-		
-		found_node --return
-	),
-
 	/** Paste unsmoothed vertex colors
 	 */
 	function _pasteUnsmoothedVertexColors verts_by_colors =
@@ -919,7 +924,9 @@ struct PrintExporter_v
 		function matchingName _string pattern = (( dotNetClass "System.Text.RegularExpressions.RegEx" ).match _string pattern ( dotNetClass "System.Text.RegularExpressions.RegexOptions" ).IgnoreCase ).success
 
 		/* EXCLUDE NON GEOMTERY OBJECTS -- SHpaes, helpers etc. */ 
-		excluded_objects = for obj in export_objects where superClassOf obj != GeometryClass collect obj
+		excluded_objects = for obj in export_objects \
+			where not ( superClassOf obj == GeometryClass or classOf obj == ExportNodePlugin )\
+				collect obj
 
 		
 		/* EXCLUDE BY OJECT NAME */ 
