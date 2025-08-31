@@ -2,6 +2,8 @@ clearListener(); print("Cleared in:"+getSourceFileName())
 
 format "classOf ExportNode X: %\n" (classOf ExportNode)
 
+filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-07-VERTEX_SELECTION/Lib/getInternalVertsOfObject/getInternalVertsOfObject.ms" )	--"./../MAXSCRIPT-MaxSlicer/MaxSlicer/rollouts-Main/rollout-07-VERTEX_SELECTION/Lib/getInternalVertsOfObject/getInternalVertsOfObject.ms"
+
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/FileInImporter/FileInImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/FileInImporter/FileInImporter.ms"
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/StartUpScriptImporter/StartUpScriptImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/StartUpScriptImporter/StartUpScriptImporter.ms"
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-UI-framework/Lib/PlugInImporter/PlugInImporter.ms" )	--"./../MAXSCRIPT-UI-framework/Lib/PlugInImporter/PlugInImporter.ms"

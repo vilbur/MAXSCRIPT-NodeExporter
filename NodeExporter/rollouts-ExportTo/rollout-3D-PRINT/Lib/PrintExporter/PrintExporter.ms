@@ -164,7 +164,11 @@ struct PrintExporter_v
 				all_exported_objects = #()
 				excluded_objects_all = #()
 				
-				sliderTime = frame
+				if export_keys.count == 1 then
+					frame = undefined
+				
+				if frame != undefined then 
+					sliderTime = frame
 
 				/*==============================================================================
 					PREPARE FOR EXPORT
