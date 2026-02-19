@@ -105,7 +105,6 @@ struct MaxToZbrushSync_v
 				imported_obj = imported_polygroups[1]
 
 			imported_obj.name = getFilenameFile( file )
-
 			this._replaceImportedObjects(objects_before_import)( imported_obj )( imported_obj.name )
 		)
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Komodo Project File - DO NOT EDIT -->
-<project id="640e1e37-f762-488e-ae28-11c19c36e314" kpf_version="5" name="MS-NodeExporter.komodoproject">
+<project id="640e1e37-f762-488e-ae28-11c19c36e314" kpf_version="5" name="MS   -   NodeExporter.komodoproject">
 <livefolder id="0016e747-21a4-409f-88a6-84641d1babbd" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="rollout-ZBRUSH" url="NodeExporter/rollouts-ExportTo/rollout-ZBRUSH/">
 </livefolder>
 <file id="1becf992-b6f4-4df6-9c3c-94df86bb64a8" idref="640e1e37-f762-488e-ae28-11c19c36e314" name="3-Export-Options.mcr" url="NodeExporter/3-Export-Options.mcr">
